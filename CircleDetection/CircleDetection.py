@@ -123,7 +123,7 @@ while(1):
     minCompactness = 0.5
     centers = AnalyseContours(contours, minArea, maxArea, minCompactness)
     
-    print("There are {} objects".format(len(centers)))
+    print("There are {} objects in the frame".format(len(centers)))
   
     
     # Color the central coordinates for blue bricks with a filled circle
