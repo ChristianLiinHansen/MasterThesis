@@ -27,6 +27,7 @@ Created on Fri Sep 26 13:00:30 2014
 import numpy as np
 import cv2
 import cv
+import os
 
 ##########################################
 # Functions
