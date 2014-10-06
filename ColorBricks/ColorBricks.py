@@ -55,6 +55,8 @@ def GetCountours(image):
         
         #Calculate the moments 
         m = cv2.moments(contour)
+        
+        print("All the moments is:", m)
         if (int(m['m01']) == 0 or int(m['m00'] == 0)):
             continue
         center = (int(m['m10'] / m['m00']), int(m['m01'] / m['m00']))
