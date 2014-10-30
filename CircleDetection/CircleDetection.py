@@ -114,7 +114,9 @@ while(1):
     cv2.imshow('Thresholded video',mask)
     
     # Draw the countours on the input images, -1 is draw all countours
-    #cv2.drawContours(smallImg, contours, -1, (0,255,0), 3)    
+    cv2.drawContours(smallImg, contours, -1, (0,255,0), 3)
+       
+    
     contours = GetCountours(mask)
     
     #Analyse the contours for area

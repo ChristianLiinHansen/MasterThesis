@@ -6,7 +6,7 @@ Created on Thu Oct  2 14:54:03 2014
 """
 
 import numpy as np
-import mlpy
+ import mlpy
 #D. Albanese, R. Visintainer, S. Merler, S. Riccadonna, G. Jurman, C. Furlanello. mlpy: Machine Learning Python, 2012. arXiv:1202.6548 [bib]
 import matplotlib.pyplot as plt # required for plotting
 import cv2

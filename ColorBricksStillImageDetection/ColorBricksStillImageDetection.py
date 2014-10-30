@@ -152,7 +152,7 @@ CreateTrackBarBlue()
 
 while(1):
     #Read an image
-    img =  cv2.imread('lego.jpg', cv.CV_LOAD_IMAGE_COLOR) 
+    img =  cv2.imread('lego.jpg', cv.CV_LOAD_IMAGE_COLOR)  
     TrackBarListener("red")
     TrackBarListener("yellow")
     TrackBarListener("blue")
@@ -161,7 +161,7 @@ while(1):
     scale = 0.2
     img_resize = ResizeImg(img,scale)
 
-    cv2.imshow("Input image resized", img_resize)
+    #cv2.imshow("Input image resized", img_resize)
     
     #Convert the image into a grayscale
     #img_gray = cv2.cvtColor(img_resize, cv2.COLOR_BGR2GRAY)
@@ -176,30 +176,30 @@ while(1):
     img_yellow = cv2.inRange(img_hsv, lower_yellow, upper_yellow)  
     img_blue = cv2.inRange(img_hsv, lower_blue, upper_blue)  
     
-    #cv2.imshow("Color segmented - red", img_red)
-    #cv2.imshow("Color segmented - yellow", img_yellow)
-    #cv2.imshow("Color segmented - blue", img_blue)
+    cv2.imshow("Color segmented - red", img_red)
+    cv2.imshow("Color segmented - yellow", img_yellow)
+    cv2.imshow("Color segmented - blue", img_blue)
     
     # Subtract the blue and yellow to isolate the red
     img_red = img_red - img_yellow - img_blue
-    #cv2.imshow("Color segmented - red alone", img_red)
+    cv2.imshow("Color segmented - red alone", img_red)
     
     
     # Write image
-    cv2.imwrite("img_red.png", img_red)
-    cv2.imwrite("img_yellow.png", img_yellow)
-    cv2.imwrite("img_blue.png", img_blue)      
+    #cv2.imwrite("img_red.png", img_red)
+    #cv2.imwrite("img_yellow.png", img_yellow)
+    #cv2.imwrite("img_blue.png", img_blue)      
     
     #Do a little morphology to remove the lastpart of the LEGO yellow LEGO brick
     iterations_erode = 2
     kernel = np.ones((3,3),np.uint8)
     img_red = cv2.erode(img_red,kernel,iterations = iterations_erode)   
-    cv2.imshow("Color segmented - red alone after erosion", img_red)
+    #cv2.imshow("Color segmented - red alone after erosion", img_red)
     
     #Do a little morphology - dialate
     iterations_dialate = 2
     img_red = cv2.dilate(img_red,kernel,iterations = iterations_dialate)
-    cv2.imshow("Color segmented - red alone after dialate", img_red)
+    #cv2.imshow("Color segmented - red alone after dialate", img_red)
 
     # Finding the center coordinates for red, yellow and blue    
     centers_red = GetCenters(img_red)
