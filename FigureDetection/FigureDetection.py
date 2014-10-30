@@ -138,7 +138,7 @@ plt.xlabel('Perimeter')
 plt.ylabel('Compactness')
 
 #And then show all the figures
-plt.show()
+#plt.show()
 
 
 # Now the classifier can start. First I will try with the K-means algorithm
