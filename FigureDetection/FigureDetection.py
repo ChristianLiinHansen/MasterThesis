@@ -7,33 +7,177 @@ Created on Thu Oct 23 14:29:21 2014
 ##########################################
 # Functions
 ##########################################
-def dot_product(values, weights):
-    return sum(value * weight for value, weight in zip(values, weights))
 
-def GetFeatures(contours):
-    area = []
-    perimeter = []
-    compactness = []
-    output_vector = []
-
+#The contourClass is an argument, since this function is used for the supervised
+#learning.In SL we need to specify which class each contour belongs to. 
+#If the contourClass belongs to 1, means the training data is i.e. circles
+#else if the contourClass belongs to -1, means the training data is i.e. squares.
+#else if the contourClass belongs to 0, means the data is not training data, but test data
+def GetFeatures(contours, contourClass, areaThreshold):
+    result = []    
+    output = []    
     for contour in contours:
-        #Get the area, perimeter and compactness of the contours in contours1    
+        #Get the area of each of the contours 
         temp_area = cv2.contourArea(contour,False)
     
         #Skip the iteration if the area is less than something     
-        if temp_area < 10:
-            continue 
+        if temp_area < areaThreshold:
+            continue
+        
+        #Get the perimeter of each of the contours
         temp_perimeter = cv2.arcLength(contour, 1); # 1 indicate that the contours is closed. 
+        
+        #Get the compactness of each of the contours        
         temp_compactness = (4 * 3.141592 * temp_area) / (temp_perimeter * temp_perimeter)
     
-        area.append(temp_area)   
-        perimeter.append(temp_perimeter)
-        compactness.append(temp_compactness)
+        #Append the area in result
+        result.append(temp_area)
+        
+        #Append the compactness in result        
+        result.append(temp_compactness) 
+        
+        #Append the which class the contour has in result
+        result.append(contourClass)
+        
+        #Store the information for each contour in the output list.
+        # output = [[area0, compactness0, contourClass0], [area1, compactness1, contourClass1],...]
+        output.append(result)
+        
+        #Clear the result list for each contour        
+        result = []    
     
-    output_vector.append(area)
-    output_vector.append(perimeter)
-    output_vector.append(compactness) 
-    return output_vector
+    #When loop is done, the output is returned    
+    return output
+
+#trainingData = [[area, compactness, contourClass], [area, compactness, contourClass],...]
+def Perceptron(trainingData, learning_rate):
+    print("Now the perceptron starts")    
+    
+    output = []
+    error_plot = []
+    w0_plot = []
+    w1_plot = []
+    b_plot = []
+    
+    #Initial random weights and bias from 0.0 to 1.0
+    w = [random.uniform(0.0, 1.0), random.uniform(0.0, 1.0)]
+    b = random.uniform(0.0, 1.0)
+
+    #Start the algorithm
+    runFlag = True
+    trueCounter = 0
+    while runFlag == True:
+        trueCounter += 1
+        #print('-' * 60)
+        error_count = 0      
+        
+        for data in trainingData:
+            #print("The weights is:", w)            
+            #Calculate the dotproduct between input and weights            
+            dot_product = data[0]*w[0] + data[1]*w[1]
+            
+            #If the dotprodcuct + the bias is >= 0, then result is class 1
+            # else it is class -1. 
+            if dot_product + b >= 0:
+                result = 1
+            else:
+                result = -1
+            
+            #Calculate error, where data[2] is the contourClass/desired output 
+            error = data[2] - result
+
+            #Continue the while, continue the algorithm if only the error is not zero
+            if error != 0:
+                error_count += 1
+                #Update the final waits and bias
+                w[0] += data[0]*learning_rate*error
+                w[1] += data[1]*learning_rate*error
+                b += learning_rate * error
+        
+            #Store the weights and bias
+            w0_plot.append(w[0])
+            w1_plot.append(w[1])
+            b_plot.append(b)
+            error_plot.append(error)
+    
+        if error_count == 0:
+           # print("Now there is no errors in the whole trainingData")
+            runFlag = False
+    print("The number of iterations before the Perceptron stops is:", trueCounter)
+
+    plt.figure("Plot weights, bias and error")
+    plt.title("Plot weights, bias and error")
+    #plt.xlabel('Area')
+    #plt.ylabel('w0')
+    plt.plot(w0_plot, 'b-', label="w0")
+    plt.plot(w1_plot, 'g-', label="w1")
+    plt.plot(b_plot, 'r-', label="b")
+    plt.plot(error_plot, 'c-', label="error")
+#    ax = plt.subplot(111)
+#    ax.legend(loc='lower center', bbox_to_anchor=(0.8, 0.9),
+#          ncol=3, fancybox=True, shadow=True)
+    plt.legend(bbox_to_anchor=(0.0, 1.1))
+    plt.show(block = False)
+    
+    output.append(w)
+    output.append(b)
+    return output
+
+def GetContours(string):
+    #Load the data in
+    img = cv2.imread(string, cv2.CV_LOAD_IMAGE_COLOR)
+    
+    #Do the grayscale converting 
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)    
+    
+    # Show the thresholding
+    #cv2.imshow("Grayscale image", gray_img)     
+    
+    #Do the thresholding
+    ret,threshold_img = cv2.threshold(gray_img,250,255,cv2.THRESH_BINARY_INV)
+    
+    # Show the thresholding
+    #cv2.imshow("New image", threshold_img)    
+    
+    #Copy the image, to avoid manipulating with original
+    contour_img = threshold_img.copy()
+    
+    #Find the contours of the thresholded image
+    contours, hierarchy = cv2.findContours(contour_img,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)    
+    
+    #Draw the contours
+    cv2.drawContours(img,contours,-1,(0,255,0),2)
+    
+    #Show the image
+    cv2.imshow(string, img)
+       
+    #Return the contours
+    return contours
+    
+def NormalizeData(trainingData):
+    temp_area = []
+    temp_compactness = []
+    
+    #Extract the area and compactness in traningData
+    for index in trainingData:
+        temp_area.append(index[0])
+        temp_compactness.append(index[1])
+
+    #Find the maximum value of area and compactness
+    maxArea = max(temp_area)
+    maxCompactness = max(temp_compactness)
+        
+    #print('-' * 60)
+    
+    #Normalize area and compactness in trainingData, so it form 0 to 1. 
+    for index in trainingData:
+        norm_area = index[0]/maxArea
+        index[0] = norm_area
+        
+        norm_compactness = index[1]/maxCompactness
+        index[1] = norm_compactness
+        
+    return trainingData
 
 ##########################################
 # Libraries
@@ -41,374 +185,200 @@ def GetFeatures(contours):
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt # required for plotting
-
-#Load the data in
-training1Img = cv2.imread("roundObjects.png", cv2.CV_LOAD_IMAGE_COLOR)
-training2Img = cv2.imread("Squres_and_stuff.png", cv2.CV_LOAD_IMAGE_COLOR)
-#training3Img = cv2.imread("triangles.png", cv2.CV_LOAD_IMAGE_COLOR)
-testImg = cv2.imread("testImage.png", cv2.CV_LOAD_IMAGE_COLOR)
-
-# Do the grayscale converting   
-grayImg1 = cv2.cvtColor(training1Img, cv2.COLOR_BGR2GRAY)
-grayImg2 = cv2.cvtColor(training2Img, cv2.COLOR_BGR2GRAY) 
-#grayImg3 = cv2.cvtColor(training3Img, cv2.COLOR_BGR2GRAY)
-grayTest = cv2.cvtColor(testImg, cv2.COLOR_BGR2GRAY)
-
-#Do the thresholding
-ret,thresh1 = cv2.threshold(grayImg1,220,255,cv2.THRESH_BINARY_INV)
-ret,thresh2 = cv2.threshold(grayImg2,220,255,cv2.THRESH_BINARY_INV)
-#ret,thresh3 = cv2.threshold(grayImg3,220,255,cv2.THRESH_BINARY_INV)
-ret,threshTest = cv2.threshold(grayTest,220,255,cv2.THRESH_BINARY_INV)
-
-# Contour filling, maybee?
-
-# Finding the contours
-# Before applying the findContours, we need to clone the image, otherwise
-# we mess with the original image
-contourImage1 = thresh1.copy()
-contourImage2 = thresh2.copy()
-#contourImage3 = thresh3.copy()
-contourImageTest = threshTest.copy()
-
-contours1, hierarchy = cv2.findContours(contourImage1,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)    
-contours2, hierarchy = cv2.findContours(contourImage2,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)    
-#contours3, hierarchy = cv2.findContours(contourImage3,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)    
-contoursTest, hierarchy = cv2.findContours(contourImageTest,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-
-#Draw the contours
-cv2.drawContours(training1Img,contours1,-1,(0,255,0),2)
-cv2.drawContours(training2Img,contours2,-1,(0,255,0),2)
-#cv2.drawContours(training3Img,contours3,-1,(0,255,0),2)
-cv2.drawContours(threshTest,contoursTest,-1,(0,255,0),2)
-
-#Create the list for each image
-area1 = []
-perimeter1 = []
-compactness1 = []
-
-area2 = []
-perimeter2 = []
-compactness2 = []
-
-#area3 = []
-#perimeter3 = []
-#compactness3 = []
-
-areaTest = []
-perimeterTest = []
-compactnessTest = []
-
-test = [[]]
-test = GetFeatures(contours1)
-
-print("Now the testing begings...")
-print("The result is", test)
-
-for contour in contours1:
-    #Get the area, perimeter and compactness of the contours in contours1    
-    temp_area = cv2.contourArea(contour,False)
+import pylab  
+import random
+def main():
     
-    #Skip the iteration if the area is less than something     
-    if temp_area < 10:
-        continue 
-    temp_perimeter = cv2.arcLength(contour, 1); # 1 indicate that the contours is closed. 
-    temp_compactness = (4 * 3.141592 * temp_area) / (temp_perimeter * temp_perimeter)
+    #For each image, get the contours in the image
+    contourTraining1 = GetContours("roundObjects.png")
+    contourTraining2 = GetContours("squres_and_stuff.png")
+    contourTesting = GetContours("testImage.png")
     
-    area1.append(temp_area)   
-    perimeter1.append(temp_perimeter)
-    compactness1.append(temp_compactness)
-
-for contour in contours2:
-    #Get the area, perimeter and compactness of the contours in contours1    
-    temp_area = cv2.contourArea(contour,False) 
+    print("The length of contourTraining1 is:%d" %(len(contourTraining1)))
+    print("The length of contourTraining2 is:%d" %(len(contourTraining2)))
+    print("The length of contourTesting is:%d" %(len(contourTesting)))
     
-    #Skip the iteration if the area is less than something 
-    if temp_area < 10:
-        continue     
+    # Find the features for each contours from each image
+    # featureTraining1[[]] = [[area], [perimeter], [compactness]]
+    areaThreshold = 10
+    contourClass1 = 1
+    contourClass2 = -1
+    contourClass3 = 0
     
-    temp_perimeter = cv2.arcLength(contour, 1); # 1 indicate that the contours is closed. 
-    temp_compactness = (4 * 3.141592 * temp_area) / (temp_perimeter * temp_perimeter)
+    featureTraining1 = GetFeatures(contourTraining1, contourClass1, areaThreshold)
+    featureTraining2 = GetFeatures(contourTraining2, contourClass2, areaThreshold)
+    featureTesting = GetFeatures(contourTesting, contourClass3, areaThreshold)
     
-    area2.append(temp_area)   
-    perimeter2.append(temp_perimeter)
-    compactness2.append(temp_compactness)
-
-#for contour in contours3:
-#    #Get the area, perimeter and compactness of the contours in contours1    
-#    temp_area = cv2.contourArea(contour,False) 
-#    
-#    #Skip the iteration if the area is less than something 
-#    if temp_area < 10:
-#        continue 
-#    
-#    temp_perimeter = cv2.arcLength(contour, 1); # 1 indicate that the contours is closed. 
-#    temp_compactness = (4 * 3.141592 * temp_area) / (temp_perimeter * temp_perimeter)
-#    
-#    area3.append(temp_area)   
-#    perimeter3.append(temp_perimeter)
-#    compactness3.append(temp_compactness)
-
-for contour in contoursTest:
-    #Get the area, perimeter and compactness of the contours in contours1    
-    temp_area = cv2.contourArea(contour,False) 
+    #Extract the two features, area and compactness, form the two featureTraning data sets...
+    area1 = []
+    compactness1 = []
+    for index in featureTraining1:
+        area1.append(index[0])
+        compactness1.append(index[1])
     
-    #Skip the iteration if the area is less than something 
-    if temp_area < 10:
-        continue     
+    area2 = []
+    compactness2 = []
+    for index in featureTraining2:
+        area2.append(index[0])
+        compactness2.append(index[1])
+          
+    #Draw the featuers from the training data set
+    plt.figure("Feature space for training")
+    plt.title("Feature space for training")
+    plt.plot(area1,compactness1, 'ro', label = "circles")
+    plt.plot(np.mean(area1), np.mean(compactness1), 'rs', markersize=20)
+    plt.plot(area2,compactness2, 'bs', label = "rectangles")
+    plt.plot(np.mean(area2), np.mean(compactness2), 'bs', markersize=20)
+    plt.legend(bbox_to_anchor=(1.0, 1.15))
+    plt.grid(True)
+    plt.xlabel('Area')
+    plt.ylabel('Compactness')
+    #plt.xlim(0,1)
+    plt.ylim(0.5,1)
+    plt.show(block = False)
+
+    #Add the training data together
+    trainingData = featureTraining1 + featureTraining2
+    testingData = featureTesting    
     
-    temp_perimeter = cv2.arcLength(contour, 1); # 1 indicate that the contours is closed. 
-    temp_compactness = (4 * 3.141592 * temp_area) / (temp_perimeter * temp_perimeter)
+    #Normalization of trainingData and testingData
+    trainingData = NormalizeData(trainingData)    
+    testingData =  NormalizeData(testingData)   
     
-    areaTest.append(temp_area)   
-    perimeterTest.append(temp_perimeter)
-    compactnessTest.append(temp_compactness)
-    
-#So now we have tree features from tree images
-# Let plot the featuers in a 2D plot.
-plt.figure(1)
-plt.plot(area1, perimeter1, 'ro')
-plt.plot(area2, perimeter2, 'go')
-#plt.plot(area3, perimeter3, 'bo')
-
-plt.title('Feature space')
-plt.xlabel('Area')
-plt.ylabel('Perimeter')
-
-plt.figure(2)
-plt.plot(area1, compactness1, 'ro')
-plt.plot(area2, compactness2, 'go')
-#plt.plot(area3, compactness3, 'bo')
-
-#Plot the mean of the cluster
-plt.plot(np.mean(area1), np.mean(compactness1), 'rs', markersize=20)
-#Plot the mean of the cluster
-plt.plot(np.mean(area2), np.mean(compactness2), 'gs', markersize=20)
-#Plot the mean of the cluster
-#plt.plot(np.mean(area3), np.mean(compactness3), 'bs', markersize=20)
-
-plt.title('Feature space')
-plt.xlabel('Area')
-plt.ylabel('Compactness')
-
-plt.figure(3)
-plt.plot(perimeter1, compactness1, 'ro')
-plt.plot(perimeter2, compactness2, 'go')
-#plt.plot(perimeter3, compactness3, 'bo')
-plt.title('Feature space')
-plt.xlabel('Perimeter')
-plt.ylabel('Compactness')
-
-#And then show all the figures
-#plt.show()
-
-
-
-#Now the idea is to implement a simply linear classifier, using
-#the Perceptron. In this case, one feature is simply enough to 
-#seperate the data into two clusters. 
-# When the examples with i.e. numbers in the SUDOKU is implemented
-# then the neurale network should have more than 1 input.
-
-#But in this simple case we use the most simple ANN, the perceptron.
-# One input, x, one weight w, and one output y. 
-#
-#   x --w-->(Neuron) --> y
-#
-
-#print("The compactnes for training data set 1 is:", compactness1)
-#print('-' * 60)
-#print("The compactnes for training data set 2 is:", compactness2)
-#print('-' * 60)
-#print("To concatunate two vector is done simple as is:", compactness1 + compactness2 )
-#To shuffle them randomly, we do this:
-    
-#compactness_list = compactness1 + compactness2
-#random.shuffle(compactness_list)
-#print("Now the list is combined and shufled", compactness_list)
-
-#testA = [1,2,3,4,5,6,7,8,9]
-#random.shuffle(testA)
-#print("And the shuffle is:",testA)
-#print("The first element is:", compactness_list[0])
-
-# Use the zip function to make a set. 
-# Like compactness1 = [c0,c1,...cn] and area1 = [a0,a1,a2....]
-# so with zip we get [(c0,a0), (c1,a1),....,(cn,an)]
-
-
-
-
-#f, subfig = plt.subplots(2, 3)
-#subfig[0, 0].plot(area1, compactness1, 'ro')
-#subfig[0, 0].set_title('Axis [0,0]')
-#subfig[0, 1].plot(area1, compactness1, 'go')
-#subfig[0, 1].set_title('Axis [0,1]')
-#subfig[1, 0].plot(area1, compactness1, 'ro')
-#subfig[1, 0].set_title('Axis [1,0]')
-#subfig[1, 1].plot(area1, compactness1, 'ro')
-#subfig[1, 1].set_title('Axis [1,1]')
-
-#plt.plot(area1, compactness1, 'ro')
-#plt.plot(area2, compactness2, 'go')
-#plt.plot(area3, compactness3, 'bo')
-#plt.title('Feature space')
-
-# Input
-x = 0.0
-# Weight
-w0 = 0.0
-w1 = 0.0
-# Unclear if the if the w should be a np.array or list 
-# Output
-y = 0.0
-#Learning reate r
-r = 0.1
-#Threshold
-t = 0.7
-#Error
-e = 0.0
-
-# Desired output #Seen from the training data. Could be calculated directly when 
-# having the other class. 
-# Like: upper class min = 0.90 and lower class max = 0.80, then threshold is
-# (min+max)/2 = 0.85
-
-compactness_threshold = 0.85
-error_plot = []
-w0_plot = []
-w1_plot = []
-
-# First we need to normalized the area of image1
-array1 = np.array(area1)
-array2 = np.array(area2)
-
-maxValue1 = max(array1)
-maxValue2 = max(array2)
-
-norm_array1 = array1/maxValue1
-norm_array2 = array1/maxValue2
-
-zipped1 = zip(compactness1, norm_array1)
-zipped2 = zip(compactness2, norm_array2)
-
-#print("Length of zipped1 is:",len(zipped1))
-#print("Length of zipped2 is:",len(zipped2))
-zipped = zipped1 + zipped2
-#print("Length of zipped is:",len(zipped))
-
-#Before sending in the data, we shuffle it ...
-#print("Before the shuffle the vector is: ",zipped)
-#random.shuffle(zipped)
-#print("After the shuffle the vector is: :",zipped)
-
-for input_vector in zipped:
-    print("The input_vector contains (compactness, area):", input_vector)
-    print('-' * 60)
-    
-    #Define the x0 and x1 out from the input vector. x0 is compactness and x1 is area
-    x0 = input_vector[0]
-    x1 = input_vector[1]
-    
-    #Find the desired output z    
-    if(x0 > compactness_threshold):
-        z = 1
-        print 'Now z = 1'
-    else:
-        z = 0
-        print 'Now z = 0'
-    
-    #Show the weigts
-    print("w0 is: ", w0)
-    print("w0 is: ", w1)
-    
-    #Calclatethe c
-    c0 = x0*w0
-    c1 = x1*w1
-
-    # Calulate the sum
-    s = c0 + c1
-
-    # Calulate the n
-    if(s > compactness_threshold):
-        n = 1
-    else:
-        n = 0
-
-    #Calculate error
-    e = z - n
-    error_plot.append(e)
-
-    #Calculate correction
-    d = r*e
-
-    #Update the final waits
-    w0 = w0 + x0*d
-    w1 = w1 + x1*d
-    
-    w0_plot.append(w0)
-    w1_plot.append(w1)
-    
-    #Print the error
-    print("The error is: ", e)
-
-# Now the perceptron has learned... (when the error is 0 for a long time)
-print('-' * 60)
-print 'After learning'
-
-plt.figure()
-plt.plot(error_plot, 'r', markersize=5)
-plt.plot(w0_plot, 'g', markersize=5)
-plt.plot(w1_plot, 'b', markersize=5)
-plt.show()
-#Plot the mean of the cluster
-#plt.plot(np.mean(area2), np.mean(compactness2), 'gs', markersize=20)
-#Plot the mean of the cluster
-#plt.plot(np.mean(area3), np.mean(compactness3), 'bs', markersize=20)
-
-#Find the contours for the final test image
-#Calculate the output.
-print ("The final weights after learning is w0: ", w0, "and w1: ", w1)
-
-#y = data_input0 * w0 + data_input1 * w1
-#
-#if (y > 0)
-#data --> til den ene side
-#else (y < 0)
-#
-#print y
-
-# Dette var rigtig tænkt! Blot udregn compactness og area for testing data og ikke længere
-# træning data. Derefter sæt ind i i y og sige: Hvis y > 0 er det classe 1
-# og ellers hvis y < 0 er det classe 2. 
-# Husk også at tilføje bias, således at man kan seperere flere lineære problemer.
-# Ellers kan vi kun seperere ting der går gennem 0,0, hvis bias  = 0.
-
-
-
-#Somewher here I need to find the contour of the test and get the 
-# compactness and area out. 
-#Then define the new data_vector as [(c0,a0), (c1,a1), ..., (cn,an)] wher
-# the cn and an is talking from the testing image. 
-
-# Then apply the neron, so Sum = datainput[0]*w0 + datainput[1]*w1
-# if Sum > threshold ---> y = 1, else y = 0.
-# If y == 1, then the contour is a circle and else if y == 0 then the contour is square. 
-
-
-  
-#    if (e == 0):
-#        break
-      
-while(1):
-    cv2.imshow("training1Img", training1Img)
-    cv2.imshow("trainin2Img", training2Img)
-    cv2.imshow("Test image", testImg)
+    #Extract again the two features, area and compactness, form the two featureTraning data sets...
+    # that now has been normalized
+    area_norm_training = []
+    compactness_norm_training = []
+    for index in trainingData:
+        area_norm_training.append(index[0])
+        compactness_norm_training.append(index[1])
      
+    #Extract again the two features, area and compactness, form the two featureTesting data sets...
+    # that now has been normalized
+    area_norm_testing = []
+    compactness_norm_testing = []
+    for index in testingData:
+        area_norm_testing.append(index[0])
+        compactness_norm_testing.append(index[1])
     
-    #cv2.imshow("trainin3Img", training3Img)    
-    k = cv2.waitKey(30) & 0xff
-    if k == 27:
-        print("User closed the program...")
-        break  
+    #Draw the featuers from the training data set - normalized
+#    plt.figure("Feature space for training - normalized")
+#    plt.title("Feature space for training - normalized")
+#    plt.plot(area_norm_training, compactness_norm_training, 'g*', label = "Normalized traning data")
+#    plt.legend(bbox_to_anchor=(1.0, 1.1))
+#    plt.grid(True)
+#    plt.xlabel('Area')
+#    plt.ylabel('Compactness')
+#    plt.show(block = False)
+    
+    #Now the area and compactness in trainingData has been normalized    
+    
+    #Run the Perceptron algorithm to learn the classifier something...
+    learning_rate = 0.10
+    result = []
+    
+    #Shuffle the trainingData before sending the data into the Perceptron
+    #print ("Before shuffle", trainingData)
+    random.shuffle(trainingData)
+    #print("And the shuffle is:",trainingData)
+    
+    #The result[0] is the final weights and result[1] is the final bias 
+    result = Perceptron(trainingData, learning_rate)
+    print("Now perceptron is done")
+    print("And the result is:", result)
+    
+    w = result[0]
+    b = result[1]
+    
+    #Draw the classifier
+    wx = pylab.arange(0,1,0.01)
+    wy = (w[0]*wx)/(-w[1]) + (b)/(-w[1])
 
-cv2.destroyAllWindows()
+    plt.figure("Feature space with classifier seperater - The perceptron")
+    plt.title("Feature space with classifier seperater - The perceptron")
+    plt.plot(wx,wy, 'b-', label = "The perceptron line")
+    plt.plot(area_norm_training, compactness_norm_training, 'g*', label = "Normalized training data")
+    plt.legend(bbox_to_anchor=(1.0, 1.15))
+    plt.grid(True)
+    plt.xlabel('Area')
+    plt.ylabel('Compactness')
+    plt.xlim(0,1)
+    plt.ylim(0.5,1)    
+    plt.show(block = False)
+    
+    #With the ready Perceptron classifier, we can now classify the testing data
+    # and mark that on the original testing image.
+    
+    #Doing the classification. So if the y is negative, it belongs to class -1
+    # and if the y is positive it belongs to class 1. 
+    # Before the testingData is intered the classifier, the data[2] = 0 --> unclassified.
+    # After this for loop the data[2] is either -1 or +1
+    class1 = []
+    classNeg1 = []    
+    for index in testingData:
+        y = index[0]*w[0] + index[1]*w[1] + b
+        if y >= 0:
+            index[2] = 1
+            class1.append(index)
+        else:
+            index[2] = -1
+            classNeg1.append(index)
+    
+    #Extract the two features, area and compactness, form the testing data sets...
+    # that has been normalized
+    class1_area_list = []
+    class1_compactness_list = []
+    for index in class1:
+        class1_area_list.append(index[0])
+        class1_compactness_list.append(index[1])
+    
+    classNeg1_area_list = []
+    classNeg1_compactness_list = []
+    for index in classNeg1:
+        classNeg1_area_list.append(index[0])
+        classNeg1_compactness_list.append(index[1])
+    
+    plt.figure("test")
+    plt.title("test")
+    plt.plot(wx,wy, 'b-', label = "The perceptron line")
+    plt.plot(class1_area_list, class1_compactness_list, 'ro', label = "Class1 classified data")
+    plt.plot(classNeg1_area_list, classNeg1_compactness_list, 'bo', label = "ClassNeg1 classified data")
+    plt.legend(bbox_to_anchor=(1.0, 1.15))    
+    plt.grid(True)
+    plt.xlabel('Area')
+    plt.ylabel('Compactness')
+    plt.xlim(0,1)
+    plt.ylim(0.7,1)    
+    plt.show(block = False)      
+    
+    #Draw the featuers from the testing data set
+    plt.figure("Feature space for testing")
+    plt.title("Feature space for testing")
+    plt.plot(wx,wy, 'b-', label = "The perceptron line")    
+    plt.plot(area_norm_testing, compactness_norm_testing, 'go', label = "Normalized testing data")    
+    plt.legend(bbox_to_anchor=(1.0, 1.15))
+    plt.grid(True)    
+    plt.xlabel('Area')
+    plt.ylabel('Compactness')
+    plt.xlim(0,1)
+    plt.ylim(0.5,1)
+    plt.show(block = False)
+    
+      
+    while(1):
+        #cv2.imshow("training1Img", training1Img)
+        #cv2.imshow("trainin2Img", training2Img)
+        #cv2.imshow("Test image", testImg)
+        
+        print 'I need to calculate the moment of each contour and calculate the x.y positon for each contour. Then I need to store this, so at the end I can pind out which figure was classified as what'        
+        
+        #cv2.imshow("trainin3Img", training3Img)    
+        k = cv2.waitKey(30) & 0xff
+        if k == 27:
+            print("User closed the program...")
+            break  
+
+    cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    main()
