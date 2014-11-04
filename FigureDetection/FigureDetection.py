@@ -178,7 +178,12 @@ def NormalizeData(trainingData):
         index[1] = norm_compactness
         
     return trainingData
-
+    
+def Extract(inputList, element):
+    outputList = []
+    for eachList in inputList:
+        outputList.append(eachList[element])  
+    return outputList
 ##########################################
 # Libraries
 ##########################################
@@ -210,18 +215,12 @@ def main():
     featureTesting = GetFeatures(contourTesting, contourClass3, areaThreshold)
     
     #Extract the two features, area and compactness, form the two featureTraning data sets...
-    area1 = []
-    compactness1 = []
-    for index in featureTraining1:
-        area1.append(index[0])
-        compactness1.append(index[1])
+    area1 = Extract(featureTraining1, 0)    
+    compactness1 = Extract(featureTraining1, 1)
     
-    area2 = []
-    compactness2 = []
-    for index in featureTraining2:
-        area2.append(index[0])
-        compactness2.append(index[1])
-          
+    area2 = Extract(featureTraining2, 0)    
+    compactness2 = Extract(featureTraining2, 1) 
+              
     #Draw the featuers from the training data set
     plt.figure("Feature space for training")
     plt.title("Feature space for training")
@@ -246,20 +245,14 @@ def main():
     testingData =  NormalizeData(testingData)   
     
     #Extract again the two features, area and compactness, form the two featureTraning data sets...
-    # that now has been normalized
-    area_norm_training = []
-    compactness_norm_training = []
-    for index in trainingData:
-        area_norm_training.append(index[0])
-        compactness_norm_training.append(index[1])
-     
+    # that now has been normalized    
+    area_norm_training = Extract(trainingData, 0)    
+    compactness_norm_training = Extract(trainingData, 1) 
+
     #Extract again the two features, area and compactness, form the two featureTesting data sets...
     # that now has been normalized
-    area_norm_testing = []
-    compactness_norm_testing = []
-    for index in testingData:
-        area_norm_testing.append(index[0])
-        compactness_norm_testing.append(index[1])
+    area_norm_testing = Extract(testingData, 0)    
+    compactness_norm_testing = Extract(testingData, 1)    
     
     #Draw the featuers from the training data set - normalized
 #    plt.figure("Feature space for training - normalized")
@@ -326,17 +319,10 @@ def main():
     
     #Extract the two features, area and compactness, form the testing data sets...
     # that has been normalized
-    class1_area_list = []
-    class1_compactness_list = []
-    for index in class1:
-        class1_area_list.append(index[0])
-        class1_compactness_list.append(index[1])
-    
-    classNeg1_area_list = []
-    classNeg1_compactness_list = []
-    for index in classNeg1:
-        classNeg1_area_list.append(index[0])
-        classNeg1_compactness_list.append(index[1])
+    class1_area_list = Extract(class1, 0)    
+    class1_compactness_list = Extract(class1, 1)
+    classNeg1_area_list = Extract(classNeg1, 0)    
+    classNeg1_compactness_list = Extract(classNeg1, 1)   
     
     plt.figure("test")
     plt.title("test")
@@ -364,13 +350,13 @@ def main():
     plt.ylim(0.5,1)
     plt.show(block = False)
     
-      
+    print 'I need to calculate the moment of each contour and calculate the x.y positon for each contour. Then I need to store this, so at the end I can pind out which figure was classified as what'        
+    
     while(1):
         #cv2.imshow("training1Img", training1Img)
         #cv2.imshow("trainin2Img", training2Img)
         #cv2.imshow("Test image", testImg)
         
-        print 'I need to calculate the moment of each contour and calculate the x.y positon for each contour. Then I need to store this, so at the end I can pind out which figure was classified as what'        
         
         #cv2.imshow("trainin3Img", training3Img)    
         k = cv2.waitKey(30) & 0xff
