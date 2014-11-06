@@ -7,15 +7,18 @@ Created on Thu Oct 23 14:29:21 2014
 ##########################################
 # Functions
 ##########################################
-
 #The contourClass is an argument, since this function is used for the supervised
 #learning.In SL we need to specify which class each contour belongs to. 
 #If the contourClass belongs to 1, means the training data is i.e. circles
 #else if the contourClass belongs to -1, means the training data is i.e. squares.
 #else if the contourClass belongs to 0, means the data is not training data, but test data
-def GetFeatures(contours, contourClass, areaThreshold):
+def GetFeatures(contours, contourClass, areaThreshold, centers):
+    #print ("Centers is:", centers)
     result = []    
-    output = []    
+    output = []
+    i = 0
+    #print("Length of centers is", len(centers))
+    #print("Length of contours is", len(contours))    
     for contour in contours:
         #Get the area of each of the contours 
         temp_area = cv2.contourArea(contour,False)
@@ -38,6 +41,15 @@ def GetFeatures(contours, contourClass, areaThreshold):
         
         #Append the which class the contour has in result
         result.append(contourClass)
+        
+        #Append the centroid coordinate for each contour
+        result.append(centers[i])
+
+        #Increment i to get to the next centroid.       
+        i+=1
+        #print ("The center of this contour is: %d" %(centers[]))
+        #print 'he center of this contour is: {}"' .format(centers[contour])
+        #print "The contours center is: %d and the area is: %d and compactness is %d" %(centers, temp_area, temp_compactness)
         
         #Store the information for each contour in the output list.
         # output = [[area0, compactness0, contourClass0], [area1, compactness1, contourClass1],...]
@@ -104,7 +116,7 @@ def Perceptron(trainingData, learning_rate):
            # print("Now there is no errors in the whole trainingData")
             runFlag = False
     print("The number of iterations before the Perceptron stops is:", trueCounter)
-
+    
     plt.figure("Plot weights, bias and error")
     plt.title("Plot weights, bias and error")
     #plt.xlabel('Area')
@@ -124,11 +136,8 @@ def Perceptron(trainingData, learning_rate):
     return output
 
 def GetContours(string):
-    #Load the data in
-    img = cv2.imread(string, cv2.CV_LOAD_IMAGE_COLOR)
-    
     #Do the grayscale converting 
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)    
+    gray_img = cv2.cvtColor(string, cv2.COLOR_BGR2GRAY)    
     
     # Show the thresholding
     #cv2.imshow("Grayscale image", gray_img)     
@@ -145,14 +154,39 @@ def GetContours(string):
     #Find the contours of the thresholded image
     contours, hierarchy = cv2.findContours(contour_img,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)    
     
-    #Draw the contours
-    cv2.drawContours(img,contours,-1,(0,255,0),2)
-    
     #Show the image
-    cv2.imshow(string, img)
+    #cv2.imshow(string, img)
        
     #Return the contours
     return contours
+
+def GetCentroid(contours):
+    
+    centers = []
+    
+    #Run through all the contours    
+    for contour in contours:
+        
+        #Calculate the moments for each contour in contours
+        m = cv2.moments(contour)
+        
+        #If somehow one of the moments is zero, then we brake and reenter the loop (continue)
+        #to avoid dividing with zero
+        if (int(m['m01']) == 0 or int(m['m00'] == 0)):
+            continue
+        
+        #Calculate the centroid x,y, coordinate out from standard formula.         
+        center = (int(m['m10'] / m['m00']), int(m['m01'] / m['m00']))
+        
+        #Append each calculated center into the centers list.        
+        centers.append(center)
+    return centers    
+
+def DrawCentroid(img, centers, RGB_list):
+    # Color the central coordinates for red bricks with a filled circle
+    # cv2.circle(img, centers[0], 5, (255, 0, 0), -1)
+    for center in centers:
+        cv2.circle(img, center, 5, RGB_list, -1)
     
 def NormalizeData(trainingData):
     temp_area = []
@@ -178,7 +212,7 @@ def NormalizeData(trainingData):
         index[1] = norm_compactness
         
     return trainingData
-    
+   
 def Extract(inputList, element):
     outputList = []
     for eachList in inputList:
@@ -194,10 +228,21 @@ import pylab
 import random
 def main():
     
+    #Load the data in
+    img1 = cv2.imread("roundObjects.png", cv2.CV_LOAD_IMAGE_COLOR)
+    img2 = cv2.imread("squres_and_stuff.png", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTest = cv2.imread("testImage.png", cv2.CV_LOAD_IMAGE_COLOR)
+    
     #For each image, get the contours in the image
-    contourTraining1 = GetContours("roundObjects.png")
-    contourTraining2 = GetContours("squres_and_stuff.png")
-    contourTesting = GetContours("testImage.png")
+    contourTraining1 = GetContours(img1)
+    contourTraining2 = GetContours(img2)
+    contourTesting = GetContours(imgTest)
+    
+    #Get the central mass coordinate of each contour - used to illustrated each tracked object 
+    # in the end of the program
+    centers1 = GetCentroid(contourTraining1)
+    centers2 = GetCentroid(contourTraining2)
+    centersTesting = GetCentroid(contourTesting)
     
     print("The length of contourTraining1 is:%d" %(len(contourTraining1)))
     print("The length of contourTraining2 is:%d" %(len(contourTraining2)))
@@ -210,10 +255,11 @@ def main():
     contourClass2 = -1
     contourClass3 = 0
     
-    featureTraining1 = GetFeatures(contourTraining1, contourClass1, areaThreshold)
-    featureTraining2 = GetFeatures(contourTraining2, contourClass2, areaThreshold)
-    featureTesting = GetFeatures(contourTesting, contourClass3, areaThreshold)
+    featureTraining1 = GetFeatures(contourTraining1, contourClass1, areaThreshold, centers1)
+    featureTraining2 = GetFeatures(contourTraining2, contourClass2, areaThreshold, centers2)
+    featureTesting = GetFeatures(contourTesting, contourClass3, areaThreshold, centersTesting)
     
+
     #Extract the two features, area and compactness, form the two featureTraning data sets...
     area1 = Extract(featureTraining1, 0)    
     compactness1 = Extract(featureTraining1, 1)
@@ -238,8 +284,8 @@ def main():
 
     #Add the training data together
     trainingData = featureTraining1 + featureTraining2
-    testingData = featureTesting    
-    
+    testingData = featureTesting
+
     #Normalization of trainingData and testingData
     trainingData = NormalizeData(trainingData)    
     testingData =  NormalizeData(testingData)   
@@ -350,14 +396,33 @@ def main():
     plt.ylim(0.5,1)
     plt.show(block = False)
     
-    print 'I need to calculate the moment of each contour and calculate the x.y positon for each contour. Then I need to store this, so at the end I can pind out which figure was classified as what'        
+    #Draw the contours
+    cv2.drawContours(img1,contourTraining1,-1,(0,255,0),2)
+    cv2.drawContours(img2,contourTraining2,-1,(0,255,0),2)
+    cv2.drawContours(imgTest,contourTesting,-1,(0,255,0),2)         
+    
+    #We define circles to be red, and squares to be blue
+    DrawCentroid(img1,centers1,(0,0,255))
+    DrawCentroid(img2,centers2,(255, 0,0))
+    
+    #centers = []
+    #centers = Extract(testingData, 3)
+    #print centers        
+    
+    #Do something like this:
+    for index in testingData:
+        if(index[2] == -1):
+            cv2.circle(imgTest, index[3], 5, (255,0,0), -1)
+        elif(index[2] == 1):
+            cv2.circle(imgTest, index[3], 5, (0,0,255), -1)             
+        else:
+            print("Should not come into this else")
+      
+    cv2.imshow("training1Img", img1)
+    cv2.imshow("training2Img", img2)     
+    cv2.imshow("trainingTest", imgTest)     
     
     while(1):
-        #cv2.imshow("training1Img", training1Img)
-        #cv2.imshow("trainin2Img", training2Img)
-        #cv2.imshow("Test image", testImg)
-        
-        
         #cv2.imshow("trainin3Img", training3Img)    
         k = cv2.waitKey(30) & 0xff
         if k == 27:
