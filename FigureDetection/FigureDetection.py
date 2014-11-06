@@ -72,9 +72,11 @@ def Perceptron(trainingData, learning_rate):
     b_plot = []
     
     #Initial random weights and bias from 0.0 to 1.0
-    w = [random.uniform(0.0, 1.0), random.uniform(0.0, 1.0)]
-    b = random.uniform(0.0, 1.0)
-
+    #w = [random.uniform(0.0, 1.0), random.uniform(0.0, 1.0)]
+    #b = random.uniform(0.0, 1.0)
+    
+    w = [0.00001, 0.00001]
+    b = 0.00001
     #Start the algorithm
     runFlag = True
     trueCounter = 0
@@ -184,40 +186,52 @@ def GetCentroid(contours):
 
 def DrawCentroid(img, centers, RGB_list):
     # Color the central coordinates for red bricks with a filled circle
-    # cv2.circle(img, centers[0], 5, (255, 0, 0), -1)
     for center in centers:
         cv2.circle(img, center, 5, RGB_list, -1)
     
-def NormalizeData(trainingData):
-    temp_area = []
-    temp_compactness = []
-    
-    #Extract the area and compactness in traningData
-    for index in trainingData:
-        temp_area.append(index[0])
-        temp_compactness.append(index[1])
+def NormalizeData(data, maxValueArea, maxValueCompactness):
+#    temp_area = []
+#    temp_compactness = []
+#    
+#    #Extract the area and compactness in data
+#    for index in data:
+#        temp_area.append(index[0])
+#        temp_compactness.append(index[1])
 
     #Find the maximum value of area and compactness
-    maxArea = max(temp_area)
-    maxCompactness = max(temp_compactness)
-        
-    #print('-' * 60)
-    
-    #Normalize area and compactness in trainingData, so it form 0 to 1. 
-    for index in trainingData:
-        norm_area = index[0]/maxArea
+#    maxArea = max(temp_area)
+#    maxCompactness = max(temp_compactness)
+#        
+    #Normalize area and compactness in data, so it form 0 to 1. 
+    for index in data:
+        norm_area = index[0]/maxValueArea
         index[0] = norm_area
         
-        norm_compactness = index[1]/maxCompactness
+        norm_compactness = index[1]/maxValueCompactness
         index[1] = norm_compactness
         
-    return trainingData
+    return data
    
 def Extract(inputList, element):
     outputList = []
     for eachList in inputList:
         outputList.append(eachList[element])  
     return outputList
+
+def FindMaxValueOfLists(list1, list2, element):
+    temp = []
+    for index in list1:
+        temp.append(index[element])
+        
+    #Find the maximum value of area
+    maxValue1 = max(temp)
+
+    for index in list2:
+        temp.append(index[element])    
+    
+    maxValue2 = max(temp)
+    maxValue = (maxValue1 + maxValue2)/2
+    return maxValue
 ##########################################
 # Libraries
 ##########################################
@@ -283,12 +297,17 @@ def main():
     plt.show(block = False)
 
     #Add the training data together
+    print featureTraining1
     trainingData = featureTraining1 + featureTraining2
     testingData = featureTesting
 
+    #Before finding the maximum value of both feature list
+    maxValueArea = FindMaxValueOfLists(trainingData, testingData, 0)
+    maxValueCompactness = FindMaxValueOfLists(trainingData, testingData, 1)     
+    
     #Normalization of trainingData and testingData
-    trainingData = NormalizeData(trainingData)    
-    testingData =  NormalizeData(testingData)   
+    trainingData = NormalizeData(trainingData, maxValueArea, maxValueCompactness)    
+    testingData =  NormalizeData(testingData, maxValueArea, maxValueCompactness)   
     
     #Extract again the two features, area and compactness, form the two featureTraning data sets...
     # that now has been normalized    
