@@ -302,9 +302,9 @@ def main():
     plt.figure("Feature space for training")
     plt.title("Feature space for training")
     plt.plot(area1,compactness1, 'ro', label = "circles")
-    plt.plot(np.mean(area1), np.mean(compactness1), 'rs', markersize=20)
+    # plt.plot(np.mean(area1), np.mean(compactness1), 'rs', markersize=20)
     plt.plot(area2,compactness2, 'bs', label = "rectangles")
-    plt.plot(np.mean(area2), np.mean(compactness2), 'bs', markersize=20)
+    # plt.plot(np.mean(area2), np.mean(compactness2), 'bs', markersize=20)
     plt.legend(bbox_to_anchor=(1.0, 0.20))
     plt.grid(True)
     plt.xlabel('Area')
@@ -312,6 +312,7 @@ def main():
     #plt.xlim(0,1)
     plt.ylim(0.5,1)
     plt.show(block = False)
+    plt.savefig('Feature space for training.jpg')
 
     #Add the training data together
     print featureTraining1
@@ -380,6 +381,7 @@ def main():
     plt.xlim(0,1)
     plt.ylim(0.5,1)
     plt.show(block = False)
+
 
     #With the ready Perceptron classifier, we can now classify the testing data
     # and mark that on the original testing image.

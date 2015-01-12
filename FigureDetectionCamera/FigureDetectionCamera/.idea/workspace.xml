@@ -26,7 +26,7 @@
       <file leaf-file-name="FigureDetectionCamera.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/FigureDetectionCamera.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.542044" vertical-offset="3739" max-vertical-offset="4536">
+            <state vertical-scroll-proportion="0.7993562" vertical-offset="1565" max-vertical-offset="2520">
               <caret line="436" column="13" selection-start-line="436" selection-start-column="13" selection-end-line="436" selection-end-column="13" />
               <folding>
                 <element signature="e#24#191#1" expanded="false" />
@@ -287,7 +287,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -301,11 +301,11 @@
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.0" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.0" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
     </layout>
   </component>
   <component name="Vcs.Log.UiProperties">
@@ -330,6 +330,44 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/FigureDetectionCamera.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2520">
+          <caret line="436" column="13" selection-start-line="436" selection-start-column="13" selection-end-line="436" selection-end-column="13" />
+          <folding>
+            <element signature="e#24#191#1" expanded="false" />
+            <element signature="e#1906#1939#0" expanded="false" />
+            <element signature="e#1975#2032#0" expanded="false" />
+            <element signature="e#2082#2119#0" expanded="false" />
+            <element signature="e#2168#2265#0" expanded="false" />
+            <element signature="e#2320#2363#0" expanded="false" />
+            <element signature="e#2401#2587#0" expanded="false" />
+            <element signature="e#2634#3320#0" expanded="false" />
+            <element signature="e#3388#5110#0" expanded="false" />
+            <element signature="e#5166#5322#0" expanded="false" />
+            <element signature="e#5375#5500#0" expanded="false" />
+            <element signature="e#5527#6617#0" expanded="false" />
+            <element signature="e#5563#5686#0" expanded="false" />
+            <element signature="e#5753#6177#0" expanded="false" />
+            <element signature="e#6222#6242#0" expanded="false" />
+            <element signature="e#6287#6307#0" expanded="false" />
+            <element signature="e#6354#6376#0" expanded="false" />
+            <element signature="e#6423#6445#0" expanded="false" />
+            <element signature="e#6498#6558#0" expanded="false" />
+            <element signature="e#6596#6617#0" expanded="false" />
+            <element signature="e#6654#8631#0" expanded="false" />
+            <element signature="e#7082#7926#0" expanded="false" />
+            <element signature="e#7994#8367#0" expanded="false" />
+            <element signature="e#8412#8631#0" expanded="false" />
+            <element signature="e#8669#12824#0" expanded="false" />
+            <element signature="e#8718#9514#0" expanded="false" />
+            <element signature="e#9565#11299#0" expanded="false" />
+            <element signature="e#11338#11447#0" expanded="false" />
+            <element signature="e#11510#12824#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/FigureDetectionCamera.py">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="2610">
@@ -460,7 +498,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/FigureDetectionCamera.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.542044" vertical-offset="3739" max-vertical-offset="4536">
+        <state vertical-scroll-proportion="0.7993562" vertical-offset="1565" max-vertical-offset="2520">
           <caret line="436" column="13" selection-start-line="436" selection-start-column="13" selection-end-line="436" selection-end-column="13" />
           <folding>
             <element signature="e#24#191#1" expanded="false" />

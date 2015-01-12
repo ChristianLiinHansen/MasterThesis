@@ -32,8 +32,8 @@ import random                       # required to choose random initial weights 
 class ProcessImage(object):
 
     #The constructor will run each time an object is assigned to this class.
-    def __init__(self, string, class_name):
-        self.img = cv2.imread(string, cv2.CV_LOAD_IMAGE_COLOR)
+    def __init__(self, image, class_name):
+        self.img = image
         self.getGrayImg()
         self.thresholding(250)
         self.contours = self.findContours()
@@ -48,6 +48,7 @@ class ProcessImage(object):
 
     def getGrayImg(self):
         self.grayImg = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow("Grayscale image", self.grayImg)
 
     def showGrayImg(self, window_name):
         cv2.imshow(window_name, self.grayImg)
@@ -340,33 +341,43 @@ class Perceptron(ProcessImage):
             else:
                 print("Should not come into this else")
 
-class Video(ProcessImage):
+class ProcessVideo(ProcessImage):
         #The constructor will run each time an object is assigned to this class.
     def __init__(self, string):
         self.cap = cv2.VideoCapture(string)
+        self.frame = 0
 
     def getFrame(self):
         if self.cap.isOpened():
             ret, self.frame = self.cap.read()
+            return self.frame
+        else:
+            print 'Cant open video'
 
 def main():
 
     # Training data 1. Define round objects as class 1
-    td1 = ProcessImage("roundObjects.png", 1)
+    image1 = cv2.imread("roundObjects.png", cv2.CV_LOAD_IMAGE_COLOR)
+    td1 = ProcessImage(image1, 1)
     td1.drawCenters(td1.centers, (0, 0, 255))
     td1.showImage("The round objects where contours has been drawn")
 
     # Training data 2. Define round objects as class -1
-    td2 = ProcessImage("squres_and_stuff.png", -1)
+    image2 = cv2.imread("squres_and_stuff.png", cv2.CV_LOAD_IMAGE_COLOR)
+    td2 = ProcessImage(image2, -1)
     td2.drawCenters(td2.centers, (255, 0, 0))
     td2.showImage("The rectangles objects where contours has been drawn")
 
-    # Testing data. Define round objects as class 0
-    testData = ProcessImage("testImage.png", 0)
-    testData.showImage("The testing image with mixture of objects where contours has been drawn")
-
     # Now with testing data, which comes from a camera
-    video = Video(0)
+    video = ProcessVideo(0)
+
+    testingVideo = video.getFrame()
+    # cv2.imshow("Test of video", testingVideo)
+
+    # Testing data. Define round objects as class 0
+    testImage = cv2.imread("testImage.png", cv2.CV_LOAD_IMAGE_COLOR)
+    testData = ProcessImage(testingVideo, 0)
+    testData.showImage("The testing image with mixture of objects where contours has been drawn")
 
     #Draw data
     drawData1 = PlotFigures("Feature space for training data")
@@ -430,7 +441,7 @@ def main():
 
     # Wait here, while user hits ESC.
     while 1:
-        video.getFrame()
+        # video.getFrame()
         cv2.imshow('Video', video.frame)
 
         k = cv2.waitKey(30) & 0xff
