@@ -53,7 +53,7 @@ class ProcessImage(object):
 
         # contours
         self.contoursSeeds = self.getContours(self.imgSeeds)
-        self.centerSeeds = self.getCentroid(self.contoursSeeds, 120)
+        self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000)
 
 
 
