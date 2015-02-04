@@ -38,20 +38,29 @@ class ProcessImage(object):
         self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
 
         # Functions that I want to be called each time we instansiate the class. I.e each time we get a new image
+        #self.imgROI_1 = self.getROI(self.img, 0, 1500, 0, 1500)
+        #self.imgROI_2 = self.getROI(self.img, 0, 1500, 1500, 3000)
+
         self.imgGray = self.getGrayImage()
         self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
         self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
         self.imgSeedAndTrout = self.addImg(self.imgThreshold, self.imgHSV)
         self.imgMorph = self.getClosing(self.imgHSV, 2, 2)
 
+        #Define the images that we want to work with.
+        self.imgSprouts = self.imgMorph.copy()
+        self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts)
+
         # contours
-        self.contours = self.getContours(self.imgMorph)
-        self.centers = self.getCentroid(self.contours, 120)
+        self.contoursSeeds = self.getContours(self.imgSeeds)
+        self.centerSeeds = self.getCentroid(self.contoursSeeds, 120)
+
+
 
         self.imgWithContours = self.img.copy()
-        self.drawCentroid(self.imgWithContours, self.centers, 10, (0, 0, 255))
+        self.drawCentroid(self.imgWithContours, self.centerSeeds, 10, (0, 0, 255))
 
-        self.rects = self.getMinAreaRect(self.contours)
+        self.rects = self.getMinAreaRect(self.contoursSeeds)
         # self.box = cv2.cv.BoxPoints(self.rects)
         # self.box = np.int0(self.box)
 
@@ -62,9 +71,17 @@ class ProcessImage(object):
         cv2.imshow(nameOfWindow, image_show)
         cv2.imwrite("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(nameOfWindow) + ".jpg", image_show)
 
+    def getROI(self, image, startY, endY, startX, endX):
+        roi = image.copy()
+        return roi[startY:endY, startX:endX]
+
     def scaleImg(self, image, scale):
         img_scale = cv2.resize(image, (0, 0), fx=scale, fy=scale)
         return img_scale
+
+    def subtractImg(self, image1, image2):
+        subtractImage = cv2.subtract(image1, image2)
+        return subtractImage
 
     def addImg(self, image1, image2):
         addedImage = cv2.add(image1, image2)
@@ -186,10 +203,18 @@ def testFunction():
 
 def main():
 
-    # Loading the image
-    input_image = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/seeds/seeds2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # Loading the image.
 
-    #input_image = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/seeds/roi_seed.png", cv2.CV_LOAD_IMAGE_COLOR)
+    #This image, seed1, is an ideal image taking with flash from a high resolution camera. Using images from movie, will not be as nice
+    # However I will start implementing the classification system based on a the nice image, and later we can focus on getting better images.
+
+    input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    #input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed10.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    #input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/FromVideo.png", cv2.CV_LOAD_IMAGE_COLOR)
+
+    #This image is from the video, where no flash has been used. This results in less quality.
+    #input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/TestingQuality1.png", cv2.CV_LOAD_IMAGE_COLOR)
     # The next step is to interface a camera into the code.
     # And then each frame from the camera will be treated as a input_image
 
@@ -200,23 +225,39 @@ def main():
     image_ratio = 0.3
     #imgObj.showImg("Input image and fitted to display on screen", imgObj.img, image_ratio)
 
-    # Threshold the image
-    imgObj.showImg("Thresholded image and fitted to display on screen", imgObj.imgThreshold, image_ratio)
+    # Grayscale
+    #imgObj.showImg("Grayscale image and fitted to display on screen", imgObj.imgGray, image_ratio)
+
+    # Threshold the image. This contains the seeds and the sprouts with a gray level.
+    #imgObj.showImg("Thresholded image and fitted to display on screen", imgObj.imgThreshold, image_ratio)
 
     # Segment the image with HSV
-    imgObj.showImg("HSV segmented image and fitted to display on screen", imgObj.imgHSV, image_ratio)
+    #imgObj.showImg("HSV segmented image and fitted to display on screen", imgObj.imgHSV, image_ratio)
 
-    # Do a little morph on the HSV to get nicer trouts
-    imgObj.showImg("HSV segmented image morphed and fitted to display on screen", imgObj.imgMorph, image_ratio)
+    # Do a little morph on the HSV to get nicer sprouts
+    #imgObj.showImg("HSV segmented image morphed and fitted to display on screen", imgObj.imgMorph, image_ratio)
 
     # Add the two images, grayscale and HSV
     #imgObj.showImg("Added images and fitted to display on screen", imgObj.imgSeedAndTrout, image_ratio)
 
+
+    imgObj.showImg("The sprouts images", imgObj.imgSprouts, image_ratio)
+    imgObj.showImg("The seeds images", imgObj.imgSeeds, image_ratio)
+
     # Add the two images, grayscale and HSV
     imgObj.showImg("Show contours in image and let it be fitted to display on screen", imgObj.imgWithContours, image_ratio)
 
+    # Add the two images, grayscale and HSV
+    #imgObj.showImg("Show contours in image and let it be fitted to display on screen", imgObj.imgWithContours, image_ratio)
+
     # Get the list of data from the minRectArea OpenCV function
     rect = imgObj.rects
+
+
+
+
+
+
 
     print "The contour size is: ", len(rect)
     print rect
