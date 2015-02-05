@@ -58,12 +58,11 @@ class ProcessImage(object):
         self.contoursThreshold = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
         self.contoursSeeds = self.getContours(self.imgSeeds)          # Find contours of seeds, to later find the center of mass (COM) of the seeds.
 
-        # For each contour in the contoursThreshold, we run trough all the coordinate and
-        self.sproutAndSeedPixels = self.getSproutAndSeedPixels(self.imgSeedAndSprout, self.contoursThreshold, 5000) # The 100 is not testet to fit the smallest sprout
-
         #Center of mass, COM
         self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000) # Find COM of seeds only, and not the whole object with the sprouts. +8000 pixels is approix the area of the smallest whole seed.
 
+        # For each contour in the contoursThreshold, we run trough all the coordinate and
+        self.sproutAndSeedPixels = self.getSproutAndSeedPixels(self.imgSeedAndSprout, self.contoursThreshold, 5000) # The 100 is not testet to fit the smallest sprout
 
 
         self.imgWithContours = self.img.copy()
@@ -78,7 +77,19 @@ class ProcessImage(object):
         seeds = []
         sprouts = []
 
+        print "The shape of the image is: ", img.shape # rols x cols
+        #cv2.imshow("Test tat img, really is an image", img)
+        print "The center seed is: ", self.centerSeeds[0][0], self.centerSeeds[0][1]
+
+        x = self.centerSeeds[0][0]
+        y = self.centerSeeds[0][1]
+        test = img[x,y]
+
+        print "The intensity value is: ", test
+
         print "Now we are inside getSproutAndSeedPixels"
+
+        print "The length of the contours is: ", len(contours)
 
         #Run through all the contours
         for contour in contours:
@@ -95,10 +106,23 @@ class ProcessImage(object):
             #Now this contours is above a given acceptable area. Then we check each pixel coordinate in this contour
             # and compair it with the same pixel intensity in the input img image.
 
-            # for pixel in contour:
-            #     x = pixel[0][0]
-            #     y = pixel[0][1]
-            #     print "x and y is", x, y
+            for pixel in contour:
+                print pixel
+                y = pixel[0][0]   # x is the cols and y is the rows, when talking about images in x,y,
+                x = pixel[0][1]
+
+                print "x,y = ", x,y
+
+                if img[x,y] == 255:
+                    # print "it is a white pixel, since the value is: ", img[x,y]
+                    sprouts.append((x, y))
+                elif img[x,y] == 128:
+                    # print "it is a gray pixel, since the value is: ", img[x,y]
+                    seeds.append((x, y))
+                else:
+                    # print "it is a black pixel , since the value is: ", img[x,y]
+                    print "Should not get here"
+
             #     print "size of image is: ", len(img)
             #     intensity = img[x][y]
 
@@ -269,11 +293,13 @@ def main():
     # However I will start implementing the classification system based on a the nice image, and later we can focus on getting better images.
 
     # Using PIL library to see the size of the image below.
-    im = Image.open("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg")
-    print "size is: ", im.size
+    # im = Image.open("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg")
+    # print "size is: ", im.size
 
     #Using the OpenCV standard way of loading an image
     input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    #print input_image[43,34]
 
     #input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed10.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     #input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/FromVideo.png", cv2.CV_LOAD_IMAGE_COLOR)
@@ -317,6 +343,9 @@ def main():
     contoursSeed = imgObj.contoursSeeds
     # Get the list of data with center of mass coordinates of the seeds in the image
     centerSeeds = imgObj.centerSeeds
+
+    result = imgObj.sproutAndSeedPixels
+    # print result
 
     # print "The centerSeeds size is: ", len(centerSeeds)
     # print centerSeeds
