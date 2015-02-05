@@ -15,10 +15,12 @@ import cv2                          # required for use OpenCV
 import matplotlib.pyplot as plt     # required for plotting
 import pylab                        # required for arrange doing the wx list
 import random                       # required to choose random initial weights and shuffle data
+from PIL import Image
 
 ##########################################
 # Classes
 ##########################################
+
 
 class ProcessImage(object):
 
@@ -41,19 +43,26 @@ class ProcessImage(object):
         #self.imgROI_1 = self.getROI(self.img, 0, 1500, 0, 1500)
         #self.imgROI_2 = self.getROI(self.img, 0, 1500, 1500, 3000)
 
+        # Some primary image processing
         self.imgGray = self.getGrayImage()
-        self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
         self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
-        self.imgSeedAndTrout = self.addImg(self.imgThreshold, self.imgHSV)
         self.imgMorph = self.getClosing(self.imgHSV, 2, 2)
 
         #Define the images that we want to work with.
-        self.imgSprouts = self.imgMorph.copy()
-        self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts)
+        self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
+        self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgHSV) # Let the background be black,seeds be gray and sprouts be white
+        self.imgSprouts = self.imgMorph.copy() # Define the sprouts as just the morphed HSV image.
+        self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts) # Define the seeds as the threshold image without the sprouts
 
         # contours
-        self.contoursSeeds = self.getContours(self.imgSeeds)
-        self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000)
+        self.contoursThreshold = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
+        self.contoursSeeds = self.getContours(self.imgSeeds)          # Find contours of seeds, to later find the center of mass (COM) of the seeds.
+
+        # For each contour in the contoursThreshold, we run trough all the coordinate and
+        self.sproutAndSeedPixels = self.getSproutAndSeedPixels(self.imgSeedAndSprout, self.contoursThreshold, 5000) # The 100 is not testet to fit the smallest sprout
+
+        #Center of mass, COM
+        self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000) # Find COM of seeds only, and not the whole object with the sprouts. +8000 pixels is approix the area of the smallest whole seed.
 
 
 
@@ -64,6 +73,56 @@ class ProcessImage(object):
         # self.box = cv2.cv.BoxPoints(self.rects)
         # self.box = np.int0(self.box)
 
+    def getSproutAndSeedPixels(self, img, contours, areaThreshold):
+        # List of centers
+        seeds = []
+        sprouts = []
+
+        print "Now we are inside getSproutAndSeedPixels"
+
+        #Run through all the contours
+        for contour in contours:
+
+            #Get the area of each contour
+            contour_area = cv2.contourArea(contour, False)
+
+            # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
+            if contour_area < areaThreshold:
+                continue
+
+            print "The contours size is: ", len(contour) # So this is how many pixel sets (x,y) there is in each contour.
+
+            #Now this contours is above a given acceptable area. Then we check each pixel coordinate in this contour
+            # and compair it with the same pixel intensity in the input img image.
+
+            # for pixel in contour:
+            #     x = pixel[0][0]
+            #     y = pixel[0][1]
+            #     print "x and y is", x, y
+            #     print "size of image is: ", len(img)
+            #     intensity = img[x][y]
+
+
+                #Now compair the intensity value of the input image, (argument in this function), at the given pixelcoordinate
+                #which is defined as pixel in the for loop.
+
+            # print "The pixel coordinate is: ", pixel[0], "and the value is x =: ", pixel[0][0], "and y = ", pixel[0][1]
+            # print "The pixel intensity in the input image at the given coordinate is: ", intensity
+
+            #     print img[pixel]
+            #     break
+               # if pixel == 255:
+               #     print "The pixel is white"
+               # elif pixel == 128:
+               #     print "The pixel is gray"
+               # else:
+               #     print "The pixel is black"
+
+
+            #Append each calculated center into the centers list.
+            #centers.append(center)
+
+        return seeds, sprouts
 
     def showImg(self, nameOfWindow, image, scale):
         imgCopy = image.copy()
@@ -112,6 +171,7 @@ class ProcessImage(object):
         contour_img = binary_img.copy()
 
         #Find the contours of the thresholded image
+        #Note: See OpenCV doc if needed to change the arguments in findContours.
         contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         #Return the contours. We dont want to use the hierarchy yet
@@ -208,6 +268,11 @@ def main():
     #This image, seed1, is an ideal image taking with flash from a high resolution camera. Using images from movie, will not be as nice
     # However I will start implementing the classification system based on a the nice image, and later we can focus on getting better images.
 
+    # Using PIL library to see the size of the image below.
+    im = Image.open("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg")
+    print "size is: ", im.size
+
+    #Using the OpenCV standard way of loading an image
     input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     #input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed10.jpg", cv2.CV_LOAD_IMAGE_COLOR)
@@ -229,7 +294,7 @@ def main():
     #imgObj.showImg("Grayscale image and fitted to display on screen", imgObj.imgGray, image_ratio)
 
     # Threshold the image. This contains the seeds and the sprouts with a gray level.
-    #imgObj.showImg("Thresholded image and fitted to display on screen", imgObj.imgThreshold, image_ratio)
+    imgObj.showImg("Thresholded image and fitted to display on screen", imgObj.imgThreshold, image_ratio)
 
     # Segment the image with HSV
     #imgObj.showImg("HSV segmented image and fitted to display on screen", imgObj.imgHSV, image_ratio)
@@ -238,34 +303,34 @@ def main():
     #imgObj.showImg("HSV segmented image morphed and fitted to display on screen", imgObj.imgMorph, image_ratio)
 
     # Add the two images, grayscale and HSV
-    #imgObj.showImg("Added images and fitted to display on screen", imgObj.imgSeedAndTrout, image_ratio)
-
-
-    imgObj.showImg("The sprouts images", imgObj.imgSprouts, image_ratio)
-    imgObj.showImg("The seeds images", imgObj.imgSeeds, image_ratio)
+    imgObj.showImg("Added images and fitted to display on screen", imgObj.imgSeedAndSprout, image_ratio)
+    #imgObj.showImg("The sprouts images", imgObj.imgSprouts, image_ratio)
+    #imgObj.showImg("The seeds images", imgObj.imgSeeds, image_ratio)
 
     # Add the two images, grayscale and HSV
     imgObj.showImg("Show contours in image and let it be fitted to display on screen", imgObj.imgWithContours, image_ratio)
 
-    # Add the two images, grayscale and HSV
-    #imgObj.showImg("Show contours in image and let it be fitted to display on screen", imgObj.imgWithContours, image_ratio)
-
-    # Get the list of data from the minRectArea OpenCV function
-    rect = imgObj.rects
+    # Get the list of contours with
+    contoursThreshold = imgObj.contoursThreshold
 
 
+    contoursSeed = imgObj.contoursSeeds
+    # Get the list of data with center of mass coordinates of the seeds in the image
+    centerSeeds = imgObj.centerSeeds
 
+    # print "The centerSeeds size is: ", len(centerSeeds)
+    # print centerSeeds
+    # print centerSeeds[0]
 
+    #print "The contoursThreshold size is: ", len(contoursThreshold)
+    #print "The contoursSeed size is: ", len(contoursSeed)
+    # print "The contours contains: "
+    # print contoursThreshold[1]
 
-
-
-    print "The contour size is: ", len(rect)
-    print rect
-
-    print "Result of test function is: ", testFunction()
-
-    test = testFunction()
-    print test[2]
+    # print "Result of test function is: ", testFunction()
+    #
+    # test = testFunction()
+    # print test[2]
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
