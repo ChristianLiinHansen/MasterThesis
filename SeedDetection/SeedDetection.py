@@ -26,9 +26,14 @@ class ProcessImage(object):
 
     #The constructor will run each time an object is assigned to this class.
     def __init__(self, img):
+
+        # Store the image argument into the public variable img
         self.img = img
+
+        # Set the threshold value to 128, in order to have gray pixels for sprouts and seeds and black pixels for background.
         self.thresholdValue = 128
 
+        #Hardcoded values in HSV which has nice properties to find the sprouts.
         self.minHue = 22
         self.maxHue = 255
         self.minSaturation = 0
@@ -36,12 +41,9 @@ class ProcessImage(object):
         self.minValue = 147
         self.maxValue = 255
 
+        # The hue min and max range.
         self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
         self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
-
-        # Functions that I want to be called each time we instansiate the class. I.e each time we get a new image
-        #self.imgROI_1 = self.getROI(self.img, 0, 1500, 0, 1500)
-        #self.imgROI_2 = self.getROI(self.img, 0, 1500, 1500, 3000)
 
         # Some primary image processing
         self.imgGray = self.getGrayImage()
@@ -73,79 +75,106 @@ class ProcessImage(object):
         # self.box = np.int0(self.box)
 
     def getSproutAndSeedPixels(self, img, contours, areaThreshold):
+        #cv2.imshow("Test tat img, really is an image", img)
+        print "Now we are inside getSproutAndSeedPixels"
+        print "The length of the contours is: ", len(contours)
         # List of centers
         seeds = []
         sprouts = []
 
         print "The shape of the image is: ", img.shape # rols x cols
-        #cv2.imshow("Test tat img, really is an image", img)
-        print "The center seed is: ", self.centerSeeds[0][0], self.centerSeeds[0][1]
+        #print "The center seed is: ", self.centerSeeds[0][0], self.centerSeeds[0][1]
 
-        x = self.centerSeeds[0][0]
-        y = self.centerSeeds[0][1]
-        test = img[x,y]
+        # x = self.centerSeeds[0][0]
+        # y = self.centerSeeds[0][1]
+        # test = img[x,y]
+        #
+        # print "The intensity value is: ", test
 
-        print "The intensity value is: ", test
-
-        print "Now we are inside getSproutAndSeedPixels"
-
-        print "The length of the contours is: ", len(contours)
-
-        #Run through all the contours
+        # Run through each contour in the contour list (contours) and check each pixel in that contour.
+        objectCounter = 0
+        seedCounter = 0
+        sproutCounter = 0
+        print "---------------------------------------------------------------"
         for contour in contours:
 
-            #Get the area of each contour
+            # Now we are at the first contour that contains a lot of pixel coordinates, i.g. (x1,y1), (x2,y2),...,(xn,yn)
+
+            #Get the area of the given contour, in order to check if that contour is actually something useful, like a seed or sprout.
             contour_area = cv2.contourArea(contour, False)
 
             # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
             if contour_area < areaThreshold:
                 continue
 
-            print "The contours size is: ", len(contour) # So this is how many pixel sets (x,y) there is in each contour.
+            # Now we examine a contour that is bigger then the areaTHreshold, i.e it is not any noise blobs.
+            objectCounter = objectCounter + 1
+
+            print "This contour contains", len(contour), "pixels coordinates" # So this is how many pixel sets (x,y) there is in each contour.
 
             #Now this contours is above a given acceptable area. Then we check each pixel coordinate in this contour
             # and compair it with the same pixel intensity in the input img image.
+            #element = 0
 
-            for pixel in contour:
-                print pixel
-                y = pixel[0][0]   # x is the cols and y is the rows, when talking about images in x,y,
-                x = pixel[0][1]
+            for pixel in contour:   # Example:
+                #element = element + 1
+                #print "We are at ", element, "out of ", len(contour)
 
-                print "x,y = ", x,y
+                #print pixel         # [[3116 2195 ] ... ]
+                #print pixel[0]      # [3116 2195]
+                #print pixel[0][0]   # 3116  --> Since the shape of the image is a 2195 x 3648, the 3648 is the x, or colums.
+                #print pixel[0][1]   # 2195   --> This is the y or rows.
 
-                if img[x,y] == 255:
-                    # print "it is a white pixel, since the value is: ", img[x,y]
-                    sprouts.append((x, y))
-                elif img[x,y] == 128:
-                    # print "it is a gray pixel, since the value is: ", img[x,y]
-                    seeds.append((x, y))
+                # But when we have to get the intensity value out, the index of an pixel is called like this:
+                # img[rows,cols], so we have to swop, since the (x,y) coordinate in OpenCV read image is (cols, rows)
+                # Therefore we swop, in order to make it right.
+                row = pixel[0][1]
+                col = pixel[0][0]
+
+                # It does not make sence to say pixel[1][0], since we examinate only one pixel at a time, which is on element 0.
+                # and on this element there is a row and a colum value.
+
+                if img[row, col] == 255:
+                    #print "it is a white pixel, since the value is: ", img[rows, cols]
+                    sprouts.append((row, col))
+
+                elif img[row, col] == 128:
+                    #print "it is a gray pixel, since the value is: ", img[rows, cols]
+                    seeds.append((row, col))
                 else:
-                    # print "it is a black pixel , since the value is: ", img[x,y]
-                    print "Should not get here"
-
-            #     print "size of image is: ", len(img)
-            #     intensity = img[x][y]
-
+                    print "it is a black pixel , since the value is: ", img[row, col]
+                    print "Should not get here, since the list of contours, contourThreshold only contains the seed and sprouts and not any background contour"
 
                 #Now compair the intensity value of the input image, (argument in this function), at the given pixelcoordinate
                 #which is defined as pixel in the for loop.
 
-            # print "The pixel coordinate is: ", pixel[0], "and the value is x =: ", pixel[0][0], "and y = ", pixel[0][1]
-            # print "The pixel intensity in the input image at the given coordinate is: ", intensity
+            print "The final list with sprouts pixel for this given contour contains", sprouts
+            print "And the size of the sprouts list was ", len(sprouts)
+            print "The final list with seed pixel for this given contour contains", seeds
+            print "And the size of the seed list was ", len(seeds)
 
-            #     print img[pixel]
-            #     break
-               # if pixel == 255:
-               #     print "The pixel is white"
-               # elif pixel == 128:
-               #     print "The pixel is gray"
-               # else:
-               #     print "The pixel is black"
+            # A check for each image how many sprouts, seeds and objects there were.
+            if len(sprouts) > 0:
+                sproutCounter = sproutCounter + 1
+
+            if len(seeds) > 0:
+                seedCounter = seedCounter + 1
+
+            # Here the COM is calculated out from the pixel that is contained in the seed list.
+            # and the COM coordinate is appended to a COM list together with the RGB value for the sprouts.
 
 
-            #Append each calculated center into the centers list.
-            #centers.append(center)
+            
 
+            #Clear the lists of sprouts and seeds pixels, in order to be ready for the next image
+            sprouts = []
+            seeds = []
+
+            print "-----------------------Done with that given contour --------------------------------------------"
+
+        print "objectCounter is", objectCounter
+        print "seedCounter is", seedCounter
+        print "sproutCounter is", sproutCounter
         return seeds, sprouts
 
     def showImg(self, nameOfWindow, image, scale):
@@ -338,7 +367,6 @@ def main():
 
     # Get the list of contours with
     contoursThreshold = imgObj.contoursThreshold
-
 
     contoursSeed = imgObj.contoursSeeds
     # Get the list of data with center of mass coordinates of the seeds in the image
