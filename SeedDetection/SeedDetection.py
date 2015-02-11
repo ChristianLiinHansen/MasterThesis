@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt     # required for plotting
 import pylab                        # required for arrange doing the wx list
 import random                       # required to choose random initial weights and shuffle data
 from PIL import Image
+from planar import BoundingBox      # Required to use https://pythonhosted.org/planar/bbox.html
 
 ##########################################
 # Classes
@@ -53,8 +54,8 @@ class ProcessImage(object):
         #Define the images that we want to work with.
         self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
         self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgHSV) # Let the background be black,seeds be gray and sprouts be white
-        self.imgSprouts = self.imgMorph.copy() # Define the sprouts as just the morphed HSV image.
-        self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts) # Define the seeds as the threshold image without the sprouts
+        # self.imgSprouts = self.imgMorph.copy() # Define the sprouts as just the morphed HSV image.
+        # self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts) # Define the seeds as the threshold image without the sprouts
 
         # contours
         self.contoursThreshold = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
@@ -63,31 +64,67 @@ class ProcessImage(object):
         #Center of mass, COM
         # self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000) # Find COM of seeds only, and not the whole object with the sprouts. +8000 pixels is approix the area of the smallest whole seed.
         # For each contour in the contoursThreshold, we run trough all the coordinate and
-        self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursThreshold, 5000, 50000) # The 100 is not testet to fit the smallest sprout
+
+        # In order to draw on the input image, without messing the original, a copy of the input image is made. This is called imgDrawings
+        self.imgDrawings = self.img.copy()
+
+        # The contours taking from imgThreshold contains a lot of noice blobs.
+        # Therefore a simple areafilter is checking
+        self.contoursThresholdFiltered = self.getContoursFilter(self.contoursThreshold, 5000, 50000)
+
+        # Now for each contour, find out which pixels belong as a sprout pixel and seed pixel
+
+
+
+        self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursThresholdFiltered, 5000, 50000) # The 100 is not testet to fit the smallest sprout
 
         print "So the feature list is: ", self.features[0]
         print "So the COM list is: ", self.features[1]
 
-        # Make a copy of the input image
-        self.imgWithContours = self.img.copy()
-
         # Draw the center of mass, on the copy of the input image.
         # Note: Somehow it seems there is a little offset in the input image, when the sprouts are longer.
-        self.drawCentroid(self.imgWithContours, self.features[1], 10, (0, 0, 255))
+        self.drawCentroid(self.imgDrawings, self.features[1], 10, (0, 0, 255))
 
-        # Test
-        self.getTextForContours(self.imgWithContours, self.features[0])
-
-        # print self.TestFunction()
-
-        # self.drawText(self.imgWithContours, 400, 100, 500, 1000)
+        # Write the hue_mean, hue_std and number of sprout pixels on the input image
+        self.getTextForContours(self.imgDrawings, self.features[0])
 
         # self.rects = self.getMinAreaRect(self.contoursSeeds)
         # # self.box = cv2.cv.BoxPoints(self.rects)
         # # self.box = np.int0(self.box)
 
+    def getContoursFilter(self, contours, minAreaThreshold, maxAreaThreshold):
+        temp_contour = []
+        print "Length of contours in imgThreshold is:", len(contours)
+        # print "contours looks like this:", contours
+        for contour in contours:
+            #Get the area of the given contour, in order to check if that contour is actually something useful, like a seed or sprout.
+            contour_area = cv2.contourArea(contour, False)
+
+            # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
+            if (contour_area < minAreaThreshold) or (contour_area > maxAreaThreshold):
+                # print "The contour area is", contour_area, "and hence skipped"
+                continue
+            else:
+                temp_contour.append(contour)
+
+        print "Length of contours is now reduced to:", len(temp_contour)
+        # print "Now contours looks like this:", temp_contour
+        return temp_contour
+
+    def getBoundingBoxOfSprout(self, img, contourSprout):
+        width = 0
+        height = 0
+        print "The contourSprout contains:", contourSprout
+
+        rect = cv2.minAreaRect(contourSprout)
+        box = cv2.cv.BoxPoints(rect)
+        box = np.int0(box)
+
+
+        # cv2.drawContours(img, contourSprout, -1, (0, 255, 0), 30)
+
     def getTextForContours(self, img, resultList):
-        print "We are inside the getTextForContours"
+        # print "We are inside the getTextForContours"
         numberOfDecimals = 1
 
         for element in resultList:
@@ -97,9 +134,6 @@ class ProcessImage(object):
                           element[3],
                           element[0][0],
                           element[0][1])
-            # print element
-            # print element[1]
-            # print element[2]
 
     def drawText(self, img, hue_mean, hue_std, numberOfSproutPixels, rows, cols):
         offsetCols = 100
@@ -142,13 +176,13 @@ class ProcessImage(object):
             x = pixel[1]   # The cols
             y = pixel[0]   # The rows
             # print "The pixel coordinate is: ", pixel, "and the RGB value at the given coordinate is: ", self.img[pixel], "which is in hue:", convertRGB2Hue(self.img[pixel])
-            print "This sprout pixel coordinate is: (", x, ",", y, ") and the RGB value at the given coordinate is r:", r, "g:", g, "b:", b, "which is in hue:", self.convertRGB2Hue(r,g,b)
+            # print "This sprout pixel coordinate is: (", x, ",", y, ") and the RGB value at the given coordinate is r:", r, "g:", g, "b:", b, "which is in hue:", self.convertRGB2Hue(r,g,b)
             hue_temp.append(self.convertRGB2Hue(r,g,b))
         # Here calculate the mean hue
         hue_mean = np.mean(hue_temp)
         hue_std = np.std(hue_temp)
-        print "hue_mean is:", hue_mean
-        print "hue_std is:", hue_std
+        # print "hue_mean is:", hue_mean
+        # print "hue_std is:", hue_std
 
         return hue_mean, hue_std, numberOfSproutPixels
 
@@ -179,10 +213,12 @@ class ProcessImage(object):
 
         return sprouts, seeds
 
+    # Note: The argument is: img --> self.imgSeedAndSprout, contours --> self.contoursThreshold, 5000, 50000
     def getFeaturesFromContours(self, img, contours, minAreaThreshold, maxAreaThreshold):
-        print "Now we are inside getSproutAndSeedPixels"
-        print "The length of the contours is: ", len(contours)
-        print "The shape of the image is: ", img.shape # rols x cols
+
+        # print "Now we are inside getSproutAndSeedPixels"
+        # print "The length of the contours is: ", len(contours)
+        # print "The shape of the image is: ", img.shape # rols x cols
 
         # showCOM list is to indicate the COM coordinates on the input image, as followed: [ (X_com, Y_com), (X_com, Y_com), ... () ]
         # The elementList contains for each contour the following : [ (X_com, Y_com), hue_mean, hue_std ]
@@ -197,33 +233,61 @@ class ProcessImage(object):
         sproutCounter = 0
         print "---------------------------------------------------------------"
 
+        np_sprout_list = []
+
+        test1 = [[[]]]
         for contour in contours:
             # Now we are at the first contour that contains a lot of pixel coordinates, i.g. (x1,y1), (x2,y2),...,(xn,yn)
-
-            #Get the area of the given contour, in order to check if that contour is actually something useful, like a seed or sprout.
-            contour_area = cv2.contourArea(contour, False)
-
-            # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
-            if (contour_area < minAreaThreshold) or (contour_area > maxAreaThreshold):
-                # print "The contour area is", contour_area, "and hence skipped"
-                continue
-
-            # Now we examine a contour that is bigger then the areaTHreshold, i.e it is not any noise blobs.
             objectCounter = objectCounter + 1
 
             print "This contour contains", len(contour), "pixels coordinates" # So this is how many pixel sets (x,y) there is in each contour.
 
-            #Now this contours is above a given acceptable area. Then we check each pixel coordinate in this contour
+            #Then we check each pixel coordinate in this contour
             # and compair it with the same pixel intensity in the input img image.
-            #element = 0
 
             # For each contour, the sprout and seed pixels is founded and stored in the sprouts and seeds lists.
             sprout, seed = self.getSproutAndSeedPixelsForEachContour(img, contour)
 
-            print "The final list with sprouts pixel for this given contour contains", sprout
-            print "And the size of the sprouts list was ", len(sprout)
-            print "The final list with seed pixel for this given contour contains", seed
-            print "And the size of the seed list was ", len(seed)
+            # Convert the sprout to numpy array
+            np_sprout = np.array(sprout)
+            print test1
+
+
+            print "What is sprout:", sprout
+            print "What is contour:", contour
+
+
+
+
+            # print "What is sprout now:", np_test
+            #
+            # print "What is sprout now:", np_test_array
+            # rect = cv2.minAreaRect(np_test)
+
+
+
+
+
+            # print "What is contour:", contour
+
+            # np_test = np.array(sprout)
+            # print np_test
+
+            # print "What is COM of sprout:", rect[0]
+            # print "So the coordinate is:", int(rect[0][0]), ",", int(rect[0][1])
+
+            # cv2.circle(self.imgWithContours, (int(rect[0][0]), int(rect[0][1])), 10, (0, 255, 0), -1)
+            # self.showImg("Now we test this shit", self.imgWithContours, 0.3)
+
+            # self.getBoundingBoxOfSprout(img, sprout)
+
+            # print "The width of this contour is:", width
+            # print "The height of this contour is:", height
+
+            # print "The final list with sprouts pixel for this given contour contains", sprout
+            # print "And the size of the sprouts list was ", len(sprout)
+            # print "The final list with seed pixel for this given contour contains", seed
+            # print "And the size of the seed list was ", len(seed)
 
             # A check for each image how many sprouts, seeds and objects there were.
             if len(sprout) > 0:
@@ -250,7 +314,7 @@ class ProcessImage(object):
             elementList.append(hue_std)
             elementList.append(numberOfSproutPixels)
 
-            print "The element list for this contour is: ", elementList
+            # print "The element list for this contour is: ", elementList
 
             # Finally append the element list into the resultList
             resultList.append(elementList)
@@ -266,6 +330,13 @@ class ProcessImage(object):
         print "objectCounter is", objectCounter
         print "seedCounter is", seedCounter
         print "sproutCounter is", sproutCounter
+
+        # print "What is np_sprout_list now:", np_sprout_list
+        # print "What is np_sprout_list now:", np_sprout_list
+        # rect = cv2.minAreaRect(np_sprout_list[0])
+        # print rect
+
+
         return resultList, showCOMList
 
     def showImg(self, nameOfWindow, image, scale):
@@ -316,7 +387,10 @@ class ProcessImage(object):
 
         #Find the contours of the thresholded image
         #Note: See OpenCV doc if needed to change the arguments in findContours.
-        contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # Note: The CHAIN_APPROX_SIMPLE only takes the outer coordinates. I.e. a square has only four coordinates instead
+        # of following the edge all around. The CHAIN_APPROX_NONE takes all the pixels.
+        # contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
         #Return the contours. We dont want to use the hierarchy yet
         # However the hierarchy is usefull the detect contours inside a contour or dont detect it.
@@ -450,7 +524,7 @@ def main():
     imgObj.showImg("Thresholded image and fitted to display on screen", imgObj.imgThreshold, image_ratio)
 
     # Show the segmentated sprouts by using HSV
-    #imgObj.showImg("HSV segmented image and fitted to display on screen", imgObj.imgHSV, image_ratio)
+    imgObj.showImg("HSV segmented image and fitted to display on screen", imgObj.imgHSV, image_ratio)
 
     # Show the morph on the HSV to get nicer sprouts
     #imgObj.showImg("HSV segmented image morphed and fitted to display on screen", imgObj.imgMorph, image_ratio)
@@ -465,7 +539,7 @@ def main():
     #imgObj.showImg("The seeds images", imgObj.imgSeeds, image_ratio)
 
     # Show the input image with indicated center of mass coordinates of each seed.
-    imgObj.showImg("Show image with center of mass in image and let it be fitted to display on screen", imgObj.imgWithContours, image_ratio)
+    imgObj.showImg("Show image with center of mass in image and let it be fitted to display on screen", imgObj.imgDrawings, image_ratio)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
