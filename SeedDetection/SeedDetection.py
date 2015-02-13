@@ -495,7 +495,7 @@ class ProcessImage(object):
 class PlotFigures():
     def __init__(self, string):
         self.name = string
-        self.fig = plt.figure(num=self.name, figsize=(8, 6), dpi=100, facecolor='w', edgecolor='k')
+        self.fig = plt.figure(num=self.name, figsize=(10.94, 8.21), dpi=100, facecolor='w', edgecolor='k')
         plt.title(self.name)
         self.ax = plt.subplot(111)
 
@@ -511,6 +511,8 @@ class PlotFigures():
 
         #Set grid on, limit the y axis (not the x yet) and put names on axis
         plt.grid(True)
+
+        self.saveFigure()
 
     def setXlabel(self, string_x):
         plt.xlabel(string_x)
@@ -529,6 +531,9 @@ class PlotFigures():
 
     def updateFigure(self):
         plt.show(block=False)
+
+    def saveFigure(self):
+        plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.name) + ".jpg")
 
 def main():
 
