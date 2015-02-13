@@ -495,7 +495,7 @@ class ProcessImage(object):
 class PlotFigures():
     def __init__(self, string):
         self.name = string
-        self.fig = plt.figure(self.name)
+        self.fig = plt.figure(num=self.name, figsize=(8, 6), dpi=100, facecolor='w', edgecolor='k')
         plt.title(self.name)
         self.ax = plt.subplot(111)
 
@@ -550,7 +550,7 @@ def main():
     imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Training data class -1. Define the secound testing data set as class -1
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Testing data class 0. Define the testing data set as class 0, since it has not been classified.
     imgTesting = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
@@ -564,14 +564,18 @@ def main():
     td1 = ProcessImage(imgTrainingClass1, 1)
 
     # Do the image processing on the training data class -1.
-    # tdNeg1 = ProcessImage(imgTrainingClassNeg1, -1)   #Uncomment this one when all the debugging printout is removed.
+    tdNeg1 = ProcessImage(imgTrainingClassNeg1, -1)   #Uncomment this one when all the debugging printout is removed.
 
     # Do the image processing on the testing data class 0
     # testData = ProcessImage(imgTrainingClassNeg1, 0)  #Uncomment this one when all the debugging printout is removed.
 
     #Draw data
-    drawData1 = PlotFigures("Feature space for training data")
-    # drawData1.plotData(td1., td1.compactness, "rs", "circles")
+    drawData1 = PlotFigures("Feature space for training data class 1")
+    drawData1.plotData(td1.features[2], td1.features[7], "rs", "Class 1")
+    drawData1.plotData(tdNeg1.features[2], tdNeg1.features[7], "bs", "Class -1")
+    drawData1.setXlabel('hue_mean')
+    drawData1.setYlabel('width/height ratio')
+    drawData1.updateFigure()
 
 
     # td1.showImg("Input image and fitted to display on screen", td1.img, image_ratio)
@@ -589,7 +593,8 @@ def main():
     # td1.showImg("HSV segmented image morphed and fitted to display on screen", td1.imgMorph, image_ratio)
 
     # Show the addition of the two images, thresholde and HSV
-    td1.showImg("Added images and fitted to display on screen", td1.imgSeedAndSprout, image_ratio)
+    td1.showImg("Added training data class 1 and fitted to display on screen", td1.imgSeedAndSprout, image_ratio)
+    tdNeg1.showImg("Added training data class -1 and fitted to display on screen", tdNeg1.imgSeedAndSprout, image_ratio)
 
     # Show the sprouts image
     #td1.showImg("The sprouts images", td1.imgSprouts, image_ratio)
@@ -598,7 +603,9 @@ def main():
     #td1.showImg("The seeds images", td1.imgSeeds, image_ratio)
 
     # Show the input image with indicated center of mass coordinates of each seed.
-    td1.showImg("Show image with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", td1.imgDrawings, image_ratio)
+    td1.showImg("Show trainingdata class 1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", td1.imgDrawings, image_ratio)
+    tdNeg1.showImg("Show trainingdata class -1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", tdNeg1.imgDrawings, image_ratio)
+
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
