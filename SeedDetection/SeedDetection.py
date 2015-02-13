@@ -18,15 +18,16 @@ import random                       # required to choose random initial weights 
 from PIL import Image
 from planar import BoundingBox      # Required to use https://pythonhosted.org/planar/bbox.html
 
+from FigureDetectionCamera import Perceptron # Here we can get the function from the Python file, called FigureDetectionCamera.py
+
 ##########################################
 # Classes
 ##########################################
 
-
 class ProcessImage(object):
 
     #The constructor will run each time an object is assigned to this class.
-    def __init__(self, img):
+    def __init__(self, img, classStamp):
 
         # Store the image argument into the public variable img
         self.img = img
@@ -75,10 +76,7 @@ class ProcessImage(object):
         self.contoursThresholdFiltered = self.getContoursFilter(self.contoursThreshold, 5000, 50000)
 
         # Now for each contour, find out which pixels belong as a sprout pixel and seed pixel
-        self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursThresholdFiltered, 5000, 50000) # The 100 is not testet to fit the smallest sprout
-
-        print "So the feature list is: ", self.features[0]
-        print "So the COM list is: ", self.features[1]
+        self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursThresholdFiltered, classStamp) # The 100 is not testet to fit the smallest sprout
 
         # Draw the center of mass, on the copy of the input image.
         # Note: Somehow it seems there is a little offset in the input image, when the sprouts are longer.
@@ -86,6 +84,18 @@ class ProcessImage(object):
 
         # Write the hue_mean, hue_std number of sprout pixels, and the height, and width of the boundingBox around the each sprout
         self.getTextForContours(self.imgDrawings, self.features[0])
+
+        # Each feature is ready to take out for plotting
+        print "The features[0] is:", self.features[0] # On the zero'th element, the whole resultList is stored. I.e. [[(x,y), hue_mean, hue_std... classStamped],... [..]]
+        print "The features[1] is:", self.features[1] # On the first element, all the center seed coordinates is stored.
+        print "The features[2] is:", self.features[2] # On the secound element, all the hue_mean values for each sprout is stored.
+        print "The features[3] is:", self.features[3] # On the third element, all the hue_std values for each sprout is stored.
+        print "The features[4] is:", self.features[4] # On the fourth element, the number of sprout pixels values for each sprout is stored.
+        print "The features[5] is:", self.features[5] # On the firth element, the width values for each sprout is stored.
+        print "The features[6] is:", self.features[6] # On the sixth element, the height values for each sprout is stored.
+        print "The features[7] is:", self.features[7] # On the seventh element, the width/height ratio values for each sprout is stored.
+        print "The features[8] is:", self.features[8] # On the eighth element, the classStamp values for each sprout is stored.
+
 
     def getContoursFilter(self, contours, minAreaThreshold, maxAreaThreshold):
         temp_contour = []
@@ -108,20 +118,21 @@ class ProcessImage(object):
 
     def getTextForContours(self, img, resultList):
         # print "We are inside the getTextForContours"
-        numberOfDecimals = 1
+        numberOfDecimals = 2
 
         for element in resultList:
-            self.drawText(img,
-                          element[0][0],
-                          element[0][1],
-                          round(element[1], numberOfDecimals),
-                          round(element[2], numberOfDecimals),
-                          element[3],
-                          element[4],
-                          element[5]
+            self.drawText(img,                                      # The input image
+                          element[0][0],                            # The x pixel COM position
+                          element[0][1],                            # The y pixel COM position
+                          round(element[1], numberOfDecimals),      # The hue_mean
+                          round(element[2], numberOfDecimals),      # The hue_std
+                          element[3],                               # The numberOfSproutPixels
+                          element[4],                               # The width in pixels of the boundingBox of the sprout
+                          element[5],                               # The height in pixels of the boundingBox of the sprout
+                          round(element[6], numberOfDecimals)       # The ratio width/height
                           )
 
-    def drawText(self, img, rows, cols, hue_mean, hue_std, numberOfSproutPixels, width, height):
+    def drawText(self, img, rows, cols, hue_mean, hue_std, numberOfSproutPixels, width, height, ratio):
         offsetCols = 100
         offsetRows = 70
         cv2.putText(img, "mu:" + str(hue_mean), (rows-offsetCols,                       cols+offsetRows),   cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
@@ -129,6 +140,7 @@ class ProcessImage(object):
         cv2.putText(img, "Pixels:" + str(numberOfSproutPixels), (rows-offsetCols,       cols+3*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
         cv2.putText(img, "width:" + str(width), (rows-offsetCols,                       cols+4*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
         cv2.putText(img, "height:" + str(height), (rows-offsetCols,                     cols+5*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
+        cv2.putText(img, "ratio:" + str(ratio), (rows-offsetCols,                       cols+6*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
 
     def convertRGB2Hue(self, r, g, b):
         # http://www.rapidtables.com/convert/color/rgb-to-hsv.htm
@@ -224,18 +236,21 @@ class ProcessImage(object):
         return bbox.width, bbox.height
 
     # Note: The argument is: img --> self.imgSeedAndSprout, contours --> self.contoursThreshold, 5000, 50000
-    def getFeaturesFromContours(self, img, contours, minAreaThreshold, maxAreaThreshold):
+    def getFeaturesFromContours(self, img, contours, classStamp):
 
-        # print "Now we are inside getSproutAndSeedPixels"
-        # print "The length of the contours is: ", len(contours)
-        # print "The shape of the image is: ", img.shape # rols x cols
-
-        # showCOM list is to indicate the COM coordinates on the input image, as followed: [ (X_com, Y_com), (X_com, Y_com), ... () ]
-        # The elementList contains for each contour the following : [ (X_com, Y_com), hue_mean, hue_std ]
-        # The resultList contains all the contours as followed : [ [(X_com, Y_com), hue_mean, hue_std], [(X_com, Y_com), hue_mean, hue_std], ...[] ]
+        # Define the list of elements
         elementList = []
+
+        # Define the list of values for all the contours for each element.
         resultList = []
-        showCOMList = []
+        seedCenterList = []
+        hueMeanList = []
+        hueStdList = []
+        numberOfSproutPixelsList = []
+        widthList = []
+        heightList = []
+        ratioList = []
+        classStampList = []
 
         #Run through each contour in the contour list (contours) and check each pixel in that contour.
         objectCounter = 0
@@ -259,6 +274,13 @@ class ProcessImage(object):
             width, height = self.drawBoundingBoxSprout(sprout)
             print "The boundingBoxs width is:", width
             print "The boundingBoxs height is:", height
+
+            if not height:
+                ratio = 0
+                print "The ratio width/height is:", ratio
+            else:
+                ratio = float(height/width)
+                print "The ratio width/height is:", float(height/width)  # Note: Here I swopped the height and width, since the output was swopped
 
             # A check for each image how many sprouts, seeds and objects there were.
             if len(sprout) > 0:
@@ -286,14 +308,26 @@ class ProcessImage(object):
             elementList.append(numberOfSproutPixels)
             elementList.append(height)              # Note: Here I swopped the height and width, since the output was swopped
             elementList.append(width)
-
-            # print "The element list for this contour is: ", elementList
+            elementList.append(ratio)
+            elementList.append(classStamp)
 
             # Finally append the element list into the resultList
             resultList.append(elementList)
 
-            # Append to showCOMList in order to show the COM on the input image
-            showCOMList.append(center_of_mass)
+            # Append to seedCenter in order to show the COM on the input image
+            seedCenterList.append(center_of_mass)
+
+            # Append to all the feature lists in order to plot these feature later on a feature space diagram.
+            # However it might end up with a 2D plot with the y-axis as hue_mean and the x-axis as ratio of width/height
+            # Maybe we need to have convex hull, but I gues a simple bounding box is enough. I am not using the rotated bbox,
+            # since it did not work in OpenCV. The normal boundingbox is from the planar library.
+            hueMeanList.append(hue_mean)
+            hueStdList.append(hue_std)
+            numberOfSproutPixelsList.append(numberOfSproutPixels)
+            widthList.append(height)            # Note: Here I swopped the height and width, since the output was swopped
+            heightList.append(width)
+            ratioList.append(ratio)
+            classStampList.append(classStamp)
 
             # Clear the element list for each contour
             elementList = []
@@ -304,7 +338,7 @@ class ProcessImage(object):
         print "seedCounter is", seedCounter
         print "sproutCounter is", sproutCounter
 
-        return resultList, showCOMList
+        return resultList, seedCenterList, hueMeanList, hueStdList, numberOfSproutPixelsList, widthList, heightList, ratioList, classStampList
 
     def showImg(self, nameOfWindow, image, scale):
         imgCopy = image.copy()
@@ -458,55 +492,113 @@ class ProcessImage(object):
         value = cv2.getTrackbarPos(name, nameOfWindow)
         return value
 
+class PlotFigures():
+    def __init__(self, string):
+        self.name = string
+        self.fig = plt.figure(self.name)
+        plt.title(self.name)
+        self.ax = plt.subplot(111)
+
+    def plotData(self, x, y, string_icon, string_label):
+        plt.plot(x, y, string_icon, label=string_label)
+
+        # Shrink current axis by 20%
+        box = self.ax.get_position()
+        self.ax.set_position([box.x0, box.y0, box.width * 0.95, box.height])
+
+        # Put a legend to the right of the current axis
+        self.ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+        #Set grid on, limit the y axis (not the x yet) and put names on axis
+        plt.grid(True)
+
+    def setXlabel(self, string_x):
+        plt.xlabel(string_x)
+
+    def setYlabel(self, string_y):
+        plt.ylabel(string_y)
+
+    def limit_y(self, min_y, max_y):
+        plt.ylim(min_y, max_y)
+
+    def limit_x(self, min_x, max_x):
+        plt.xlim(min_x, max_x)
+
+    def plotMean(self, x, y, string_icon):
+        plt.plot(np.mean(x), np.mean(y), string_icon, markersize=20)
+
+    def updateFigure(self):
+        plt.show(block=False)
+
 def main():
 
-    # Loading the image.
-
-    #This image, seed1, is an ideal image taking with flash from a high resolution camera. Using images from movie, will not be as nice
+    ###############################################################################################
+    # Generel note:
+    #
+    # The image, seed1, is an ideal image taking with flash from a high resolution camera. Using images from movie, will not be as nice
     # However I will start implementing the classification system based on a the nice image, and later we can focus on getting better images.
-
-    # Using PIL library to see the size of the image below.
+    # Using the PIL library  be able to see the size of the image.
     # im = Image.open("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg")
     # print "size is: ", im.size
-
-    #Using the OpenCV standard way of loading an image
-    # input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed10.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed19.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    input_image = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-
+    # However the OpenCV does this also with: print "The shape of the image is: ", img.shape # rols x cols
+    #
     # The next step is to interface a camera into the code.
     # And then each frame from the camera will be treated as a input_image
+    ################################################################################################
 
-    # Do the image processing on that given image and create the object "image"
-    imgObj = ProcessImage(input_image)
+    # Training data class 1. Define the first testing data set as class 1
+    imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
-    # Show the image. 1 = normal size. 0.5 = half size. About 1 and bigger takes a lot of CPU power!!! So dont go there.
+    # Training data class -1. Define the secound testing data set as class -1
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # Testing data class 0. Define the testing data set as class 0, since it has not been classified.
+    imgTesting = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # In order to show an image in HD, the image is way too big to show on a normal size screen.
+    # However when calling the object.showImg the image is scaled with the image_ratio parameter.
+    # 1 = normal size. 0.5 = half sieze. About 1 and bigger takes a lot of CPU power!!!
     image_ratio = 0.3
-    imgObj.showImg("Input image and fitted to display on screen", imgObj.img, image_ratio)
+
+    # Do the image processing on the training data class 1
+    td1 = ProcessImage(imgTrainingClass1, 1)
+
+    # Do the image processing on the training data class -1.
+    # tdNeg1 = ProcessImage(imgTrainingClassNeg1, -1)   #Uncomment this one when all the debugging printout is removed.
+
+    # Do the image processing on the testing data class 0
+    # testData = ProcessImage(imgTrainingClassNeg1, 0)  #Uncomment this one when all the debugging printout is removed.
+
+    #Draw data
+    drawData1 = PlotFigures("Feature space for training data")
+    # drawData1.plotData(td1., td1.compactness, "rs", "circles")
+
+
+    # td1.showImg("Input image and fitted to display on screen", td1.img, image_ratio)
 
     # Show the grayscale image
-    #imgObj.showImg("Grayscale image and fitted to display on screen", imgObj.imgGray, image_ratio)
+    #td1.showImg("Grayscale image and fitted to display on screen", td1.imgGray, image_ratio)
 
     # Show the thresholded image. This contains the seeds and the sprouts with a gray level. Background is black
-    imgObj.showImg("Thresholded image and fitted to display on screen", imgObj.imgThreshold, image_ratio)
+    # td1.showImg("Thresholded image and fitted to display on screen", td1.imgThreshold, image_ratio)
 
     # Show the segmentated sprouts by using HSV
-    imgObj.showImg("HSV segmented image and fitted to display on screen", imgObj.imgHSV, image_ratio)
+    # td1.showImg("HSV segmented image and fitted to display on screen", td1.imgHSV, image_ratio)
 
     # Show the morph on the HSV to get nicer sprouts
-    imgObj.showImg("HSV segmented image morphed and fitted to display on screen", imgObj.imgMorph, image_ratio)
+    # td1.showImg("HSV segmented image morphed and fitted to display on screen", td1.imgMorph, image_ratio)
 
     # Show the addition of the two images, thresholde and HSV
-    imgObj.showImg("Added images and fitted to display on screen", imgObj.imgSeedAndSprout, image_ratio)
+    td1.showImg("Added images and fitted to display on screen", td1.imgSeedAndSprout, image_ratio)
 
     # Show the sprouts image
-    #imgObj.showImg("The sprouts images", imgObj.imgSprouts, image_ratio)
+    #td1.showImg("The sprouts images", td1.imgSprouts, image_ratio)
 
     # Show te seed image
-    #imgObj.showImg("The seeds images", imgObj.imgSeeds, image_ratio)
+    #td1.showImg("The seeds images", td1.imgSeeds, image_ratio)
 
     # Show the input image with indicated center of mass coordinates of each seed.
-    imgObj.showImg("Show image with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", imgObj.imgDrawings, image_ratio)
+    td1.showImg("Show image with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", td1.imgDrawings, image_ratio)
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
