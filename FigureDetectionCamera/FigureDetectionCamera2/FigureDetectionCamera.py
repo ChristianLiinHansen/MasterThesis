@@ -124,6 +124,7 @@ class ProcessImage(object):
             # output = [[area0, compactness0, contourClass0], [area1, compactness1, contourClass1],...]
             output.append(result)
 
+
             #Clear the result list for each contour
             result = []
 
@@ -379,6 +380,7 @@ def main():
     testData = ProcessImage(testingVideo, 0)
     testData.showImage("The testing image with mixture of objects where contours has been drawn")
 
+
     #Draw data
     drawData1 = PlotFigures("Feature space for training data")
     drawData1.plotData(td1.area, td1.compactness, "rs", "circles")
@@ -389,6 +391,9 @@ def main():
 
     #Add the training data
     total_training_data = td1.features + td2.features
+    print "The training1 data output is:", td1.features
+    print "The training2 data output is:", td2.features
+    print "The testing data output is:", testData.features
 
     # Use the Normalize class to normalize data
     normData = Normalize(total_training_data, testData.features)
