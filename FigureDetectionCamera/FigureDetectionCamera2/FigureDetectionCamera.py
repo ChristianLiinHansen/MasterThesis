@@ -373,7 +373,7 @@ def main():
     video = ProcessVideo(0)
 
     testingVideo = video.getFrame()
-    # cv2.imshow("Test of video", testingVideo)
+    cv2.imshow("Test of video", testingVideo)
 
     # Testing data. Define round objects as class 0
     testImage = cv2.imread("testImage.png", cv2.CV_LOAD_IMAGE_COLOR)

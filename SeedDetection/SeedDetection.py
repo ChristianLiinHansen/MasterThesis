@@ -133,14 +133,22 @@ class ProcessImage(object):
                           )
 
     def drawText(self, img, rows, cols, hue_mean, hue_std, numberOfSproutPixels, width, height, ratio):
+        print "The size of the image is:", img.shape
         offsetCols = 100
-        offsetRows = 70
-        cv2.putText(img, "mu:" + str(hue_mean), (rows-offsetCols,                       cols+offsetRows),   cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
-        cv2.putText(img, "std:" + str(hue_std), (rows-offsetCols,                       cols+2*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
-        cv2.putText(img, "Pixels:" + str(numberOfSproutPixels), (rows-offsetCols,       cols+3*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
-        cv2.putText(img, "width:" + str(width), (rows-offsetCols,                       cols+4*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
-        cv2.putText(img, "height:" + str(height), (rows-offsetCols,                     cols+5*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
-        cv2.putText(img, "ratio:" + str(ratio), (rows-offsetCols,                       cols+6*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 0), 3)
+        offsetRows = 100
+        textSize = 2
+        textWidth = 3
+        textColor = (255, 0, 0)
+
+        # If the hue_mean is zero, then there was no sprout pixels and hence all the other features is zero.
+        # In that case we dont want to put text on the image, if is is uninteressting.
+        if hue_mean:
+            cv2.putText(img, "mu:" + str(hue_mean), (rows-offsetCols,                       cols+offsetRows),   cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "std:" + str(hue_std), (rows-offsetCols,                       cols+2*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "Pixels:" + str(numberOfSproutPixels), (rows-offsetCols,       cols+3*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "width:" + str(width), (rows-offsetCols,                       cols+4*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "height:" + str(height), (rows-offsetCols,                     cols+5*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "ratio:" + str(ratio), (rows-offsetCols,                       cols+6*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
 
     def convertRGB2Hue(self, r, g, b):
         # http://www.rapidtables.com/convert/color/rgb-to-hsv.htm
@@ -150,6 +158,17 @@ class ProcessImage(object):
         c_max = max(r_temp, g_temp, b_temp)
         c_min = min(r_temp, g_temp, b_temp)
         delta = c_max-c_min
+
+        if not delta:
+            print "r_temp:", r_temp
+            print "r:", r
+            print "g_temp:", g_temp
+            print "g:", g
+            print "b_temp:", b_temp
+            print "b:", b
+            hue = 0
+            return hue
+
         if c_max == r_temp:
             hue = 60 * (((g_temp-b_temp)/delta) % 6)
         elif c_max == g_temp:
@@ -163,6 +182,8 @@ class ProcessImage(object):
     def analyseSprouts(self, sproutPixels):
         hue_temp = []
         numberOfSproutPixels = len(sproutPixels)
+
+        print "We are inside the analyseSprouts"
 
         if not sproutPixels:
             print "This contour has no sprout pixels..." # Hence there is no sprout at that given seed, i.e. the hue_mean and hue_std is 0.
@@ -237,6 +258,11 @@ class ProcessImage(object):
 
     # Note: The argument is: img --> self.imgSeedAndSprout, contours --> self.contoursThreshold, 5000, 50000
     def getFeaturesFromContours(self, img, contours, classStamp):
+
+        #An overall check, so the program do not crash
+        if not contours:
+            print "There is no contours in the given image"
+            return 0
 
         # Define the list of elements
         elementList = []
@@ -341,6 +367,7 @@ class ProcessImage(object):
         return resultList, seedCenterList, hueMeanList, hueStdList, numberOfSproutPixelsList, widthList, heightList, ratioList, classStampList
 
     def showImg(self, nameOfWindow, image, scale):
+
         imgCopy = image.copy()
         image_show = self.scaleImg(imgCopy, scale)
         cv2.imshow(nameOfWindow, image_show)
@@ -535,6 +562,130 @@ class PlotFigures():
     def saveFigure(self):
         plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.name) + ".jpg")
 
+class Perceptron(ProcessImage):
+    def __init__(self, total_training_data):
+        self.training_data = total_training_data
+        random.shuffle(self.training_data)
+
+        #Initial random weights and bias from 0.0 to 1.0
+        #self.w = [random.uniform(0.0, 1.0), random.uniform(0.0, 1.0)]
+        #self.b = random.uniform(0.0, 1.0)
+
+        self.w = [0.00001, 0.00001]
+        self.b = 0.00001
+        self.error = 0
+        self.run_flag = True
+        self.true_counter = 0
+
+        # For plotting
+        self.w0_plot = []
+        self.w1_plot = []
+        self.b_plot = []
+        self.error_plot = []
+
+        self.wx = 0
+        self.wy = 0
+
+        # For the classificaton
+        self.class1 = []
+        self.classNeg1 = []
+        self.class1_area = []
+        self.class1_compactness = []
+        self.classNeg1_area = []
+        self.classNeg1_compactness = []
+
+    def startLearn(self, learning_rate):
+        print("Now the perceptron starts")
+
+        #Start the algorithm. RunFlag is already True
+        self.true_counter = 0
+        while self.run_flag == True:
+            self.true_counter += 1
+            #print('-' * 60)
+            error_count = 0
+
+            for data in self.training_data:
+                #print("The weights is:", w)
+                #Calculate the dotproduct between input and weights
+                dot_product = data[0]*self.w[0] + data[1]*self.w[1]
+
+                #If the dotprodcuct + the bias is >= 0, then result is class 1
+                # else it is class -1.
+                if dot_product + self.b >= 0:
+                    result = 1
+                else:
+                    result = -1
+
+                #Calculate error, where data[2] is the contourClass/desired output
+                self.error = data[2] - result
+
+                #Continue the while, continue the algorithm if only the error is not zero
+                if self.error != 0:
+                    error_count += 1
+                    #Update the final waits and bias
+                    self.w[0] += data[0]*learning_rate*self.error
+                    self.w[1] += data[1]*learning_rate*self.error
+                    self.b += learning_rate * self.error
+
+                #Store the weights and bias
+                self.w0_plot.append(self.w[0])
+                self.w1_plot.append(self.w[1])
+                self.b_plot.append(self.b)
+                self.error_plot.append(self.error)
+
+            if error_count == 0:
+                # print("Now there is no errors in the whole trainingData")
+                self.run_flag = False
+        print("The number of iterations before the Perceptron stops is:", self.true_counter)
+
+    def getClassifier(self):
+        self.wx = pylab.arange(0, 1, 0.01)
+        self.wy = (self.w[0]*self.wx)/(-self.w[1]) + (self.b)/(-self.w[1])
+
+    def doClassification(self, testingData, finalImage):
+    #With the ready Perceptron classifier, we can now classify the testing data
+    # and mark that on the original testing image.
+
+    #Doing the classification. So if the y is negative, it belongs to class -1
+    # and if the y is positive it belongs to class 1.
+    # Before the testingData is intered the classifier, the data[2] = 0 --> unclassified.
+    # After this for loop the data[2] is either -1 or +1
+        for index in testingData:
+            y = index[0]*self.w[0] + index[1]*self.w[1] + self.b
+            if y >= 0:
+                index[2] = 1
+                self.class1.append(index)
+            else:
+                index[2] = -1
+                self.classNeg1.append(index)
+
+        # # Extract the area and compactness for each class
+        # self.class1_feature1 = self.extract(self.class1, 0)
+        # self.class1_feature2 = self.extract(self.class1, 1)
+        # self.classNeg1_feature1 = self.extract(self.classNeg1, 0)
+        # self.classNeg1_feature2 = self.extract(self.classNeg1, 1)
+
+        for index in testingData:
+            if(index[2] == -1):
+                cv2.circle(finalImage, index[3], 5, (255, 0, 0), -1)
+            elif(index[2] == 1):
+                cv2.circle(finalImage, index[3], 5, (0, 0, 255), -1)
+            else:
+                print("Should not come into this else")
+
+class ProcessVideo(ProcessImage):
+    #The constructor will run each time an object is assigned to this class.
+    def __init__(self, string):
+        self.cap = cv2.VideoCapture(string)
+        self.img = self.getFrame()
+
+    def getFrame(self):
+        if self.cap.isOpened():
+            ret, self.frame = self.cap.read()
+            return self.frame
+        else:
+            print "Cant open video"
+
 def main():
 
     ###############################################################################################
@@ -549,21 +700,29 @@ def main():
     #
     # The next step is to interface a camera into the code.
     # And then each frame from the camera will be treated as a input_image
+    #
+    # seed31Mix.jpg             # Rækkefølgen er:  nede fra og op som billedet vender nu: (lidt) for gul- for lange- gode- gode- uspirede.
+    # seed32ForLang.jpg
+    # seed33GodeSpirer.jpg
+    # seed34Uspiretfroe.jpg
+    # seed35GulSpire.jpg
+    # seed36SkadetSpire.jpg
     ################################################################################################
-
-    # Training data class 1. Define the first testing data set as class 1
-    imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-
-    # Training data class -1. Define the secound testing data set as class -1
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-
-    # Testing data class 0. Define the testing data set as class 0, since it has not been classified.
-    imgTesting = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # In order to show an image in HD, the image is way too big to show on a normal size screen.
     # However when calling the object.showImg the image is scaled with the image_ratio parameter.
     # 1 = normal size. 0.5 = half sieze. About 1 and bigger takes a lot of CPU power!!!
     image_ratio = 0.3
+
+    # Training data class 1. Define the first testing data set as class 1
+    imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed34Uspiretfroe.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # Training data class -1. Define the secound testing data set as class -1
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/ImageFromVideo.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/ImageFromVideo.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Do the image processing on the training data class 1
     td1 = ProcessImage(imgTrainingClass1, 1)
@@ -582,6 +741,12 @@ def main():
     drawData1.setYlabel('width/height ratio')
     drawData1.updateFigure()
 
+    #Add the training data
+    total_training_data = td1.features + tdNeg1.features
+    print "The training1 data output is:", td1.features
+    print "The training2 data output is:", tdNeg1.features
+
+    # Now we add the training data together and shuffle the data for each
 
     # td1.showImg("Input image and fitted to display on screen", td1.img, image_ratio)
 
@@ -695,6 +860,58 @@ def main():
     # Wait for a user input to close down the script
 
     # cv2.destroyAllWindows()
+
+        # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed33GodeSpirer.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # Now with testing data, which comes from a camera.
+    # video = ProcessVideo(1)
+    # video.showImg("The video input image", video.img, 1)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed33GodeSpirer.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # cap = cv2.VideoCapture(2)
+    # ret, frame = cap.read()
+    # cv2.imshow('frame', frame)
+    #
+    # print "Playing the input video - hit ESC to stop the video"
+    # print "Is the cap open?", cap.isOpened()
+    # # cap.set(3, 4096) # At 4096 the parameter is limited to 2304 pixels
+    # # cap.set(4, 3072) # At 3072 the parameter is limited to 1536 pixels
+    # # cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 640) # At 1280 the parameter is limited to 1280 pixels  --> 16/9 format
+    # cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1920) # At 1024 the parameter is limited to 720 pixels
+    # cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1080) #the parameter is limited to 720 pixels
+
+    # print "CV_CAP_PROP_BRIGHTNESS:", cap.get(cv2.cv.CV_CAP_PROP_BRIGHTNESS)
+    # print "CV_CAP_PROP_CONTRAST:", cap.get(cv2.cv.CV_CAP_PROP_CONTRAST)
+    # print "CV_CAP_PROP_FOURCC:", cap.get(cv2.cv.CV_CAP_PROP_FOURCC)
+    # print "CV_CAP_PROP_FPS:", cap.get(cv2.cv.CV_CAP_PROP_FPS)
+    # print "CV_CAP_PROP_GAIN:", cap.get(cv2.cv.CV_CAP_PROP_GAIN)
+    # print "CV_CAP_PROP_EXPOSURE:", cap.get(cv2.cv.CV_CAP_PROP_EXPOSURE)
+    # print "CV_CAP_PROP_FRAME_HEIGHT:", cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)
+    # print "CV_CAP_PROP_GAIN:", cap.get(cv2.cv.CV_CAP_PROP_GAIN)
+    # print "CV_CAP_PROP_POS_AVI_RATIO:", cap.get(cv2.cv.CV_CAP_PROP_POS_AVI_RATIO)
+    # print "CV_CAP_PROP_FORMAT:", cap.get(cv2.cv.CV_CAP_PROP_FORMAT)
+    # print "CV_CAP_PROP_FPS:", cap.get(cv2.cv.CV_CAP_PROP_FPS)
+    # print "CV_CAP_PROP_CONVERT_RGB:", cap.get(cv2.cv.CV_CAP_PROP_CONVERT_RGB)
+    # print "CV_CAP_PROP_FRAME_COUNT:", cap.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT)
+    # print "CV_CAP_PROP_FRAME_WIDTH:", cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
+    # print "CV_CAP_PROP_MODE:", cap.get(cv2.cv.CV_CAP_PROP_MODE)
+
+    # while(cap.isOpened()):
+    #
+    #     ret, frame = cap.read()
+    #     cv2.imshow('frame', frame)
+    #
+    #     # if we push "ESC" the program executes
+    #     k = cv2.waitKey(30) & 0xff
+    #     if k == 27:
+    #         print "The input video is stopped"
+    #         break
+    # cv2.destroyAllWindows()
+    # cap.release()
+    # Wait until the user hit any key
+
+    # Testing data class 0. Define the testing data set as class 0, since it has not been classified.
+    # imgTesting = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
 if __name__ == '__main__':
     main()
