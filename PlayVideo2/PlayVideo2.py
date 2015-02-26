@@ -3,8 +3,6 @@
 import numpy as np
 import cv2
 import os
-import threading
-import Queue
 
 # Setting the FPS with cv and cv2 do not work with the camera Logitech e930.
 # So the class CameraDriverCV was deleted, since the FPS did not work here. The cv2 is better, and fitted to the cv2.findContours etc...
@@ -13,7 +11,7 @@ import Queue
 # Then we empty the image buffer and do this over and over again...
 # However this must be multithreading, otherwise we dont get rid of the delay.
 
-class ProducerImg:
+class CameraDriver:
     def __init__(self, cameraIndex):
         self.cameraIndex = cameraIndex
         self.cap = cv2.VideoCapture(cameraIndex)
@@ -26,10 +24,13 @@ class ProducerImg:
 
         # Set focus to a specific value. High values for nearby objects and
         # low values for distant objects.
-        self.absoluteFocus = np.array(0, dtype=np.uint8)
+        self.absoluteFocus = np.array(20, dtype=np.uint8)
 
          # sharpness (int)    : min=0 max=255 step=1 default=128 value=128
-        self.sharpness = np.array(0, dtype=np.uint8)
+        self.sharpness = np.array(200, dtype=np.uint8)
+
+        # Exposure min=3 max=2047 step=1 default=250 value=250 flags=inactive
+        self.absoluteExposure = np.array(250, dtype=np.uint16)
 
         # Take a picture bottom
         self.bottom = np.array(0, dtype=np.uint8)
@@ -38,10 +39,10 @@ class ProducerImg:
         self.adjustingSettings = np.array(0, dtype=np.uint8)
 
         # Horizontal cropping lines
-        self.horizontalLines = np.array(0, dtype=np.uint8)
+        self.horizontalLines = np.array(200, dtype=np.uint16)
 
         # Vertical cropping lines
-        self.verticalLines = np.array(0, dtype=np.uint8)
+        self.verticalLines = np.array(500, dtype=np.uint16)
 
     def drawCroppingLines(self, img):
         # Make a copy of the image
@@ -75,19 +76,24 @@ class ProducerImg:
         print "Pixel width is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
         print "Pixel height is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)
 
-    def setAutoFocus(self, autoFocus, absolutFocus, sharpness):
+    def setSettings(self, absolutFocus, sharpness, absoluteExposure):
+        # Set autofocus OFF
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
 
-        # If the autoFocus is ON, we use the autofocus
-        if autoFocus:
-            # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=' + str(int(autoFocus)))
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=1')
+        # Set exposure to Manuel mode  # Choise of auto expusure see --> https://groups.google.com/forum/#!msg/plots-infrared/lSwIqQPJSY8/ZE-LcIj7V-wJ
+        # exposure_auto (menu) : min=0 max=3 default=3    value=3  (0: Auto Mode 1: Manual Mode, 2: Shutter Priority Mode, 3: Aperture Priority Mode)
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_auto=1')
 
-        # Else we set the autoFocus to OFF, and use manuel focus
-        else:
-            # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=' + str(int(autoFocus)))
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=' + str(absolutFocus))
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=' + str(sharpness))
+        # Set the absolute focus
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=' + str(absolutFocus))
+
+        # Set the absolute exposure
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_absolute=' + str(absoluteExposure))
+
+        # Set the sharpness
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=' + str(sharpness))
+
+    #
 
     def getImg(self):
         if self.cap.isOpened():
@@ -105,14 +111,14 @@ class ProducerImg:
         img_scale = cv2.resize(image, (0, 0), fx=scale, fy=scale)
         return img_scale
 
-    def autoFocusTrackBar(self, nameOfWindow):
-        self.autoFocus = self.trackbarListener("Autofocus", nameOfWindow)
-
     def absolutFocusTrackBar(self, nameOfWindow):
         self.absoluteFocus = self.trackbarListener("Absolute focus", nameOfWindow)
 
     def sharpnessTrackBar(self, nameOfWindow):
         self.sharpness = self.trackbarListener("Sharpness", nameOfWindow)
+
+    def absoluteExposureTrackBar(self, nameOfWindow):
+        self.absoluteExposure = self.trackbarListener("Absolute exposure", nameOfWindow)
 
     def adjustingSettingsTrackBar(self, nameOfWindow):
         self.adjustingSettings = self.trackbarListener("Adjusting settings", nameOfWindow)
@@ -152,148 +158,37 @@ class ProducerImg:
         cv2.destroyAllWindows()
         self.cap.release()
 
-class Consumer:
-    print "Comsumer"
-
-class CameraDriver:
-    def __init__(self, cameraIndex):
-
-        self.cameraIndex = cameraIndex
-        self.cap = cv2.VideoCapture(cameraIndex)
-
-        # Set the resolution
-        self.setResolution()
-
-        # Disable autofocus to begin with
-        self.autoFocus = np.array(0, dtype=np.uint8)
-
-        # Set focus to a specific value. High values for nearby objects and
-        # low values for distant objects.
-        self.absoluteFocus = np.array(0, dtype=np.uint8)
-
-         # sharpness (int)    : min=0 max=255 step=1 default=128 value=128
-        self.sharpness = np.array(128, dtype=np.uint8)
-
-        # Take a picture bottom
-        self.bottom = np.array(0, dtype=np.uint8)
-
-    def setResolution(self):
-        # Set the camera in 1080p resolution. So the height is 1080, p = progressive scan = not interlaced. = "Full HD" = 1920 x 1080.
-        self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1920)      # Slight delay with full HD in app. 1 sec.
-        self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1080)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)      # Better with delay
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 720)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1024)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 576)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 848)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 480)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 640)
-        # self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 480)
-
-        print "Pixel width is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
-        print "Pixel height is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)
-
-    def setAutoFocus(self, autoFocus, absolutFocus, sharpness):
-
-        # If the autoFocus is ON, we use the autofocus
-        if autoFocus:
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=' + str(int(autoFocus)))
-
-        # Else we set the autoFocus to OFF, and use manuel focus
-        else:
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=' + str(int(autoFocus)))
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=' + str(absolutFocus))
-            os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=' + str(sharpness))
-
-    def getImg(self):
-        if self.cap.isOpened():
-            ret, img = self.cap.read()
-            return img
-        else:
-            print 'Cant open video at cameraindex:', self.cameraIndex
-
-    def showImg(self, nameOfWindow, image, scale):
-        imgCopy = image.copy()
-        image_show = self.scaleImg(imgCopy, scale)
-        cv2.imshow(nameOfWindow, image_show)
-
-    def saveImg(self, nameOfWindow, image):
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(nameOfWindow) + ".jpg", image)
-
-    def scaleImg(self, image, scale):
-        img_scale = cv2.resize(image, (0, 0), fx=scale, fy=scale)
-        return img_scale
-
-    def autoFocusTrackBar(self, nameOfWindow):
-        self.autoFocus = self.trackbarListener("Autofocus", nameOfWindow)
-        self.addTrackbar("Autofocus", nameOfWindow, self.autoFocus, 1)
-        self.setAutoFocus(self.autoFocus, self.absoluteFocus, self.sharpness)
-
-    def absolutFocusTrackBar(self, nameOfWindow):
-        self.absoluteFocus = self.trackbarListener("Absolute focus", nameOfWindow)
-        self.addTrackbar("Absolute focus", nameOfWindow, self.absoluteFocus, 255)
-
-    def sharpnessTrackBar(self, nameOfWindow):
-        self.sharpness = self.trackbarListener("Sharpness", nameOfWindow)
-        self.addTrackbar("Sharpness", nameOfWindow, self.sharpness, 255)
-
-    def takePictureTrackBar(self, nameOfWindow):
-        self.bottom = self.trackbarListener("Take picture", nameOfWindow)
-        self.addTrackbar("Take picture", nameOfWindow, self.bottom, 1)
-
-    def addTrackbar(self, nameOfTrackbar, nameOfWindow, value, maxValue):
-        cv2.namedWindow(nameOfWindow)
-        cv2.createTrackbar(nameOfTrackbar, nameOfWindow, value, maxValue, self.nothing)
-
-    def trackbarListener(self, nameOfTrackbar, nameOfWindow):
-        value = cv2.getTrackbarPos(nameOfTrackbar, nameOfWindow)
-        return value
-
-    def nothing(self, x):
-        pass
-
-    def getCroppedImg(self, nameOfWindow, img):
-        offset_x = 400
-        offset_y = 200
-        croppedImg = img.copy()
-        croppedImg = croppedImg[offset_y:img.shape[0]-offset_y, offset_x:img.shape[1]-offset_x]
-        cv2.imshow(nameOfWindow, croppedImg)
-        return croppedImg
-
-    def closeDown(self):
-        print("User closed the program...")
-        cv2.destroyAllWindows()
-        self.cap.release()
-
 def main():
 
-    # q = Queue.Queue()
-    # p = Producer()
-
+    # "GUI Bottoms"
     adjustSettings = False
     pictureTaken = False
 
+    # The image_show_ratio is to display images properly on this PC screen.
     image_show_ratio = 0.5
-    cd = ProducerImg(0)
 
+    # Calling the CameraDriver with cameraIndex as argument. Could switch to 1 og 2 sometimes...
+    cd = CameraDriver(0)
+
+    # Setting the names of different windows
     nameOfTrackBarWindow = "Trackbar settings"
     nameOfVideoStreamWindow = "VideoStream"
     nameOfVideoStreamWindowCropped = "VideoStream cropped"
 
-    # Add the trackbar in a window
+    # Add the trackbar in the trackbar window
     cd.addTrackbar("Adjusting settings", nameOfTrackBarWindow, cd.adjustingSettings, 1)
-    cd.addTrackbar("Autofocus", nameOfTrackBarWindow, cd.autoFocus, 1)
     cd.addTrackbar("Absolute focus", nameOfTrackBarWindow, cd.absoluteFocus, 255)
     cd.addTrackbar("Sharpness", nameOfTrackBarWindow, cd.sharpness, 255)
+    cd.addTrackbar("Absolute exposure", nameOfTrackBarWindow, cd.absoluteExposure, 2047)
     cd.addTrackbar("Horizontal crop", nameOfTrackBarWindow, cd.horizontalLines, int(cd.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)/6))
     cd.addTrackbar("Vertical crop", nameOfTrackBarWindow, cd.verticalLines, int(cd.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)/2))
 
+    # Let the program run, until the user push ECS
     while True:
 
-        # Listen for changes on the trackbars
+        # Listen for changes for adjusting the settings
         cd.adjustingSettingsTrackBar(nameOfTrackBarWindow)
-        cd.horizontalLineTrackBar(nameOfTrackBarWindow)
-        cd.verticallLineTrackBar(nameOfTrackBarWindow)
+
 
         # Get an image from the camera
         image = cd.getImg()
@@ -302,28 +197,35 @@ def main():
         if cd.adjustingSettings:
 
             # The trackbar setting update
-            cd.autoFocusTrackBar(nameOfTrackBarWindow)
+            cd.horizontalLineTrackBar(nameOfTrackBarWindow)
+            cd.verticallLineTrackBar(nameOfTrackBarWindow)
             cd.absolutFocusTrackBar(nameOfTrackBarWindow)
+            cd.absoluteExposureTrackBar(nameOfTrackBarWindow)
             cd.sharpnessTrackBar(nameOfTrackBarWindow)
-            cd.setAutoFocus(cd.autoFocus, cd.absoluteFocus, cd.sharpness)
+            cd.setSettings(cd.absoluteFocus, cd.sharpness, cd.absoluteExposure)
             imgDraw = cd.drawCroppingLines(image)
             croppedImg = cd.getCroppedImg(image, cd.verticalLines, cd.horizontalLines)
             cd.showImg(nameOfVideoStreamWindow, imgDraw, image_show_ratio)
             cd.showImg(nameOfVideoStreamWindowCropped, croppedImg, image_show_ratio)
             adjustSettings = True
 
+        # Else the adjustingSetting bottom is OFF.
         else:
 
+            # If we have been adjusting the settings previously, then we show the adjusted result
             if adjustSettings is True:
 
+                # If this is the first time we se the result after adjusting the settings, we grap a picture of it for late use.
                 if pictureTaken is False:
                     cd.saveImg("ImageCropped", croppedImg)
                     pictureTaken = True
 
+                # Otherwise we just show the croped/ROI streaming video that has been adjusted with focus and ROI
                 croppedImg = cd.getCroppedImg(image, cd.verticalLines, cd.horizontalLines)
                 cd.showImg(nameOfVideoStreamWindowCropped, croppedImg, image_show_ratio)
                 cv2.destroyWindow(nameOfVideoStreamWindow)
 
+            # Else then we have not yet adjusted the settings...
             else:
                 cd.showImg(nameOfVideoStreamWindow, image, image_show_ratio)
 
