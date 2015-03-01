@@ -35,6 +35,9 @@ class ProcessImage(object):
         # Store the image argument into the public variable img
         self.img = img
 
+        # Placeholder for a debuggig function.
+        self.lastMask = np.zeros(self.img.shape, dtype="uint8")
+
         # Set the threshold value to 128, in order to have gray pixels for sprouts and seeds and black pixels for background.
         self.thresholdValue = 128
 
@@ -46,9 +49,6 @@ class ProcessImage(object):
         self.minValue = 147
         self.maxValue = 255
 
-        self.minContourArea = 0
-        self.maxContourArea = 0
-
         # The hue min and max range.
         self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
         self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
@@ -57,11 +57,12 @@ class ProcessImage(object):
         self.imgGray = self.getGrayImage()
         self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
         self.imgMorph = self.getOpening(self.imgHSV, 1, 2)          # Remove any noise pixels with erosion first and then dilate after (Opening)
-        self.imgMorph = self.getClosing(self.imgMorph, 1, 0)      # However erode again after to get same sprouts size again
+        self.imgMorph = self.getOpening(self.imgMorph, 1, 0)      # However erode again after to get same sprouts size again
 
-        # self.showImg("Test imgGray", self.imgGray, 0.5)
         # self.showImg("Test imgHSV", self.imgHSV, 0.5)
         # self.showImg("Test imgMorph", self.imgMorph, 0.5)
+        # self.showImg("Input billede", self.img, 0.5)
+        # cv2.waitKey(0)
 
         #Define the images that we want to work with.
         self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
@@ -70,18 +71,39 @@ class ProcessImage(object):
         # self.imgSprouts = self.imgMorph.copy() # Define the sprouts as just the morphed HSV image.
         # self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts) # Define the seeds as the threshold image without the sprouts
 
-        # self.showImg("Test imgThreshold", self.imgThreshold, 0.5)
-        # self.showImg("Test imgSeedAndSprout", self.imgSeedAndSprout, 0.5)
+        # # Trying to do "cut" close seeds loose, by first applying the erosion and then som dilation afterwards
+        # # Hopefully the effect is that small point connections will be removed. Perhaps only do erosion of the thresholded image
+        # tempImg = self.imgThreshold.copy()
+        # imgThresholdMorph = self.getOpening(tempImg, 1, 0)
+        # self.showImg("Morh of threshold", imgThresholdMorph, 0.5)
+        # cv2.waitKey(0)
 
         # contours
         self.contoursThreshold = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
         # self.contoursSeeds = self.getContours(self.imgSeeds)          # Find contours of seeds, to later find the center of mass (COM) of the seeds.
 
-        print "Now to the contoursThreshold"
-        print "The size of this is:", len(self.contoursThreshold)
+        # Get the countour image, which shows the result of the getContours.
+        self.imgContourDrawing = self.drawContour(self.imgThreshold, self.contoursThreshold)
 
-        print "One contour looks like this:", self.contoursThreshold[0]
-        print "And now I call the minRectArea", cv2.minAreaRect(self.contoursThreshold[0])
+        # img_copy = self.imgThreshold.copy()
+        # mask = np.zeros(img_copy.shape, dtype="uint8")
+        # self.contourDrawing =
+
+        # # Draw the contours:
+        # self.showImg("Showing the image, where we do findCountours on", self.imgThreshold, 0.5)
+        # img_copy = self.imgThreshold.copy()
+        # mask = np.zeros(img_copy.shape, dtype="uint8")
+        # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+        # cv2.drawContours(mask, self.contoursThreshold, -1, (0,255,0), 1)
+        # self.showImg("Drawing the contours", mask, 0.5)
+        # cv2.waitKey(0)
+
+        # # print "Now to the contoursThreshold"
+        # print "The size of this is:", len(self.contoursThreshold)
+        #
+        # print "One contour looks like this:", self.contoursThreshold[0]
+        # # print "All the contours looks like this:", self.contoursThreshold
+        # print "And now I call the minRectArea", cv2.minAreaRect(self.contoursThreshold[0])
 
         #Center of mass, COM
         # self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000) # Find COM of seeds only, and not the whole object with the sprouts. +8000 pixels is approix the area of the smallest whole seed.
@@ -92,10 +114,8 @@ class ProcessImage(object):
 
         # The contours taking from imgThreshold contains a lot of noice blobs.
         # Therefore a simple areafilter is checking
-        self.contoursThresholdFiltered = self.getContoursFilter(self.contoursThreshold, 100, 5000)
-
-        print "Now to the contoursThresholdFiltered"
-        print "The size of this is:", len(self.contoursThresholdFiltered)
+        self.contoursThresholdFiltered = self.getContoursFilter(self.contoursThreshold, 1000, 5000)
+        print "The number of contours went from:", len(self.contoursThreshold), " to reduced size of:", len(self.contoursThresholdFiltered)
 
         # Now for each contour, find out which pixels belong as a sprout pixel and seed pixel
         if self.contoursThresholdFiltered:
@@ -106,26 +126,24 @@ class ProcessImage(object):
             circleSize = 5
             self.drawCentroid(self.imgDrawings, self.features[1], circleSize, (0, 255, 255))
 
-            # Write the hue_mean, hue_std number of sprout pixels, and the height, and width of the boundingBox around the each sprout
+            # Write the hue_mean, hue_std number of sprout pixels, and the length, and width of the boundingBox around the each sprout
             self.getTextForContours(self.imgDrawings, self.features[0])
-
-            # Each feature is ready to take out for plotting
-            print "The features[0] is:", self.features[0] # On the zero'th element, the whole resultList is stored. I.e. [[(x,y), hue_mean, hue_std... classStamped],... [..]]
-            print "The features[1] is:", self.features[1] # On the first element, all the center seed coordinates is stored.
-            print "The features[2] is:", self.features[2] # On the secound element, all the hue_mean values for each sprout is stored.
-            print "The features[3] is:", self.features[3] # On the third element, all the hue_std values for each sprout is stored.
-            print "The features[4] is:", self.features[4] # On the fourth element, the number of sprout pixels values for each sprout is stored.
-            print "The features[5] is:", self.features[5] # On the firth element, the width values for each sprout is stored.
-            print "The features[6] is:", self.features[6] # On the sixth element, the height values for each sprout is stored.
-            print "The features[7] is:", self.features[7]  # On the seventh element, the width/height ratio values for each sprout is stored.
-            print "The features[8] is:", self.features[8] # On the eighth element, the classStamp values for each sprout is stored.
 
         else:
             self.features = None
 
+    def getRatio(self, length, width):
+        if (length or width) == 0:
+            ratio = 0
+        else:
+            ratio = float(width/length)
+        return ratio
+
     def getContoursFilter(self, contours, minAreaThreshold, maxAreaThreshold):
         temp_contour = []
-        self.minContourArea = maxAreaThreshold
+        contourAreaMax = 0
+        contourAreaMin = maxAreaThreshold
+
         self.maxContourArea = 0
 
         for contour in contours:
@@ -133,22 +151,24 @@ class ProcessImage(object):
             contour_area = cv2.contourArea(contour, False)
             # print "The contour area of this contour is:", contour_area
 
-            if contour_area > self.maxContourArea:
-                self.maxContourArea = contour_area
-
-            if contour_area < self.minContourArea:
-                self.minContourArea = contour_area
-
             # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
             if (contour_area < minAreaThreshold) or (contour_area > maxAreaThreshold):
                 # print "The contour area is", contour_area, "and hence skipped"
                 continue
+
             else:
+
+                if contour_area > contourAreaMax:
+                    contourAreaMax = contour_area
+
+                if contour_area < contourAreaMin:
+                    contourAreaMin = contour_area
+
                 temp_contour.append(contour)
 
         # print "Now contours looks like this:", temp_contour
-        print "The minContourArea was:", self.minContourArea
-        print "The maxContourArea was:", self.maxContourArea
+        print "The contourAreaMax was:", contourAreaMax
+        print "The contourAreaMin was:", contourAreaMin
         return temp_contour
 
     def getTextForContours(self, img, resultList):
@@ -162,12 +182,12 @@ class ProcessImage(object):
                           round(element[1], numberOfDecimals),      # The hue_mean
                           round(element[2], numberOfDecimals),      # The hue_std
                           element[3],                               # The numberOfSproutPixels
-                          element[4],                               # The width in pixels of the boundingBox of the sprout
-                          element[5],                               # The height in pixels of the boundingBox of the sprout
-                          round(element[6], numberOfDecimals)       # The ratio width/height
+                          round(element[4], numberOfDecimals),      # The length in pixels of the boundingBox of the sprout
+                          round(element[5], numberOfDecimals),      # The width in pixels of the boundingBox of the sprout
+                          round(element[6], numberOfDecimals)       # The ratio width/length
                           )
 
-    def drawText(self, img, rows, cols, hue_mean, hue_std, numberOfSproutPixels, width, height, ratio):
+    def drawText(self, img, rows, cols, hue_mean, hue_std, numberOfSproutPixels, length, width, ratio):
         # print "The size of the image is:", img.shape
         offsetCols = 75   # 755
         offsetRows = 20   # 925
@@ -181,9 +201,29 @@ class ProcessImage(object):
             cv2.putText(img, "mu:" + str(hue_mean), (rows-offsetCols,                       cols+offsetRows),   cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
             cv2.putText(img, "std:" + str(hue_std), (rows-offsetCols,                       cols+2*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
             cv2.putText(img, "Pixels:" + str(numberOfSproutPixels), (rows-offsetCols,       cols+3*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
-            cv2.putText(img, "width:" + str(width), (rows-offsetCols,                       cols+4*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
-            cv2.putText(img, "height:" + str(height), (rows-offsetCols,                     cols+5*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "length:" + str(length), (rows-offsetCols,                     cols+4*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+            cv2.putText(img, "width:" + str(width), (rows-offsetCols,                       cols+5*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
             cv2.putText(img, "ratio:" + str(ratio), (rows-offsetCols,                       cols+6*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
+
+    def drawContour(self, img, contour):
+        # Copy the image from the argument "img"
+        img_copy = img.copy()
+
+        # Create an empty image with same size as the input img.
+        mask = np.zeros(img_copy.shape, dtype="uint8")
+
+        # Convert the empty image to color map, in order to draw color on the image
+        mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+
+        # Draw the contours in the empty image mask
+        lineWidth = 1
+        contourColor = (0, 255, 0)
+        cv2.drawContours(mask, contour, -1, contourColor, lineWidth)
+
+        return mask
+
+        # addedMask = self.addImg(self.lastMask, mask)
+        # self.lastMask = addedMask
 
     def convertRGB2Hue(self, r, g, b):
         # http://www.rapidtables.com/convert/color/rgb-to-hsv.htm
@@ -195,12 +235,12 @@ class ProcessImage(object):
         delta = c_max-c_min
 
         if not delta:
-            print "r_temp:", r_temp
-            print "r:", r
-            print "g_temp:", g_temp
-            print "g:", g
-            print "b_temp:", b_temp
-            print "b:", b
+            # print "r_temp:", r_temp
+            # print "r:", r
+            # print "g_temp:", g_temp
+            # print "g:", g
+            # print "b_temp:", b_temp
+            # print "b:", b
             hue = 0
             return hue
 
@@ -218,12 +258,6 @@ class ProcessImage(object):
         hue_temp = []
         numberOfSproutPixels = len(sproutPixels)
 
-        print "We are inside the analyseSprouts"
-
-        if not sproutPixels:
-            print "This contour has no sprout pixels..." # Hence there is no sprout at that given seed, i.e. the hue_mean and hue_std is 0.
-            return 0, 0, numberOfSproutPixels
-
         for pixel in sproutPixels:
             r = self.img[pixel][2]
             g = self.img[pixel][1]
@@ -234,6 +268,7 @@ class ProcessImage(object):
             # print "The pixel coordinate is: ", pixel, "and the RGB value at the given coordinate is: ", self.img[pixel], "which is in hue:", convertRGB2Hue(self.img[pixel])
             # print "This sprout pixel coordinate is: (", x, ",", y, ") and the RGB value at the given coordinate is r:", r, "g:", g, "b:", b, "which is in hue:", self.convertRGB2Hue(r,g,b)
             hue_temp.append(self.convertRGB2Hue(r,g,b))
+
         # Here calculate the mean hue
         hue_mean = np.mean(hue_temp)
         hue_std = np.std(hue_temp)
@@ -242,7 +277,7 @@ class ProcessImage(object):
 
         return hue_mean, hue_std, numberOfSproutPixels
 
-    def getSproutAndSeedPixelsForEachContour(self, img, contour):
+    def getSproutAndSeedPixels(self, img, contour):
         seeds = []
         sprouts = []
 
@@ -269,50 +304,38 @@ class ProcessImage(object):
 
         return sprouts, seeds
 
-    def drawBoundingBoxSprout(self, sprout):
-        if not sprout:
-            print "This contour did not have any sprout pixels \n"
-            return 0,0
-
-        print "The sprout contains", sprout
-        print "Making my numpy array"
-        nparray = np.array(sprout, dtype = np.int32)
-        print "The numpy array contains:", nparray
-
-        rect = cv2.minAreaRect(nparray)
-
-        # http://pythonhosted.org//planar/
-        bbox = BoundingBox(sprout)
-        poly = bbox.to_polygon()
-        # print "The boundingbox is has these corners", poly
-
-        # Lets try to draw this
-        lineWidth = 2
-        p1 = (int(poly[0][1]), int(poly[0][0]))
-        p2 = (int(poly[1][1]), int(poly[1][0]))
-        p3 = (int(poly[2][1]), int(poly[2][0]))
-        p4 = (int(poly[3][1]), int(poly[3][0]))
+    def drawSproutBoundingBox(self, p1, p2, p3, p4):
+        # Draw the oriente bouningbox
 
         if self.classStamp is 1:
             boundingBoxColor = (0, 0, 255)
         else:
             boundingBoxColor = (255, 0, 0)
 
+        lineWidth = 3
         cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
         cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
         cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
         cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
 
-        return bbox.width, bbox.height
+    def getLengthAndWidthFromSprout(self, obb):
+        # Get the length, width and angle
+        tempLength = obb[1][0]
+        tempWidth = obb[1][1]
+
+        # Okay, so we know that all rectangles, the length is defined to be to longest axis and the width is the shortest.
+        # So if the output of the length is shorter then the width, then we swop the two variables, so the length is the longest.
+
+        if tempLength < tempWidth:
+            length = tempWidth
+            width = tempLength
+        else:
+            length = tempLength
+            width = tempWidth
+        return length, width
 
     # Note: The argument is: img --> self.imgSeedAndSprout, contours --> self.contoursThreshold, 5000, 50000
     def getFeaturesFromContours(self, img, contours, classStamp):
-
-        #An overall check, so the program do not crash
-        if not contours:
-            print "There is no contours in the given image"
-            return 0
-
         # Define the list of elements
         elementList = []
 
@@ -322,68 +345,94 @@ class ProcessImage(object):
         hueMeanList = []
         hueStdList = []
         numberOfSproutPixelsList = []
+        lengthList = []
         widthList = []
-        heightList = []
         ratioList = []
         classStampList = []
 
         #Run through each contour in the contour list (contours) and check each pixel in that contour.
-        objectCounter = 0
         seedCounter = 0
         sproutCounter = 0
-        print "---------------------------------------------------------------"
+        print "--------------------- Running trough all the contours ---------------------"
+        print ""
 
         for contour in contours:
             # Now we are at the first contour that contains a lot of pixel coordinates, i.g. (x1,y1), (x2,y2),...,(xn,yn)
-            objectCounter = objectCounter + 1
+            seedCounter = seedCounter + 1
 
-            print "This contour contains", len(contour), "pixels coordinates" # So this is how many pixel sets (x,y) there is in each contour.
+            # print "This contour contains", len(contour), "pixels coordinates" # So this is how many pixel sets (x,y) there is in each contour.
 
             #Then we check each pixel coordinate in this contour
             # and compair it with the same pixel intensity in the input img image.
 
             # For each contour, the sprout and seed pixels is founded and stored in the sprouts and seeds lists.
-            sprout, seed = self.getSproutAndSeedPixelsForEachContour(img, contour)
+            # self.showImg("We are gettign the seed and sprout pixels by looking at this image:", img, 0.5)
+            # cv2.waitKey(0)
 
-            # Draw the bounding box for each sprout
-            width, height = self.drawBoundingBoxSprout(sprout)
-            print "The boundingBoxs width is:", width
-            print "The boundingBoxs height is:", height
+            sprout, seed = self.getSproutAndSeedPixels(img, contour)
 
-            if not height:
-                ratio = 0
-                print "The ratio width/height is:", ratio
-            elif not width:
-                ratio = 0
-            else:
-                ratio = float(height/width)
-                print "The ratio width/height is:", float(height/width)  # Note: Here I swopped the height and width, since the output was swopped
+            # If this contour contains any sprout pixels
+            if sprout:
 
-            # A check for each image how many sprouts, seeds and objects there were.
-            if len(sprout) > 0:
                 sproutCounter = sproutCounter + 1
+                # Then convert it, in order to let it be used with the minAreaRect function
+                sproutConvertedFormat = self.convertFormatForMinRectArea(sprout)
 
-            if len(seed) > 0:
-                seedCounter = seedCounter + 1
+                # Then find the oriented bounding box
+                obbSprout = self.getMinAreaRect(sproutConvertedFormat)
+                length, width = self.getLengthAndWidthFromSprout(obbSprout)
+                p1, p2, p3, p4 = self.getBoxPoints(obbSprout)
+                self.drawSproutBoundingBox(p1, p2, p3, p4)
 
-            # Here the COM is calculated out from the pixel that is contained in the seed list.
+                # Get the width/length ratio
+                ratio = self.getRatio(length, width)
 
-            # and the COM coordinate is appended to a COM list together with the RGB value for the sprouts.
-            # test = np.array(seed, dtype=np.uint8)
-            # print self.getCentroidOfSingleContour(test)
+                # Get the hue_mean, hue_std and number of sprout pixels
+                hue_mean, hue_std, numberOfSproutPixels = self.analyseSprouts(sprout)
+
+                # Debugging
+                # self.drawContour("Testing the contour", img, sproutConvertedFormat, 0.9)
+
+                # Try to draw each sprout in one color and the seed in an other color to verify that the sprout and seed list
+                # really contains the pixels that belongs to a sprout or and seed.
+
+            # Else the sprout pixel list was empty, and hence the length, width and ratio is set to zero
+            else:
+                length = 0
+                width = 0
+                ratio = 0
+                hue_mean = 0
+                hue_std = 0
+                numberOfSproutPixels = 0
+
+            # Then convert it, in order to let it be used with the minAreaRect function
+            # seedConvertedFormat = self.convertFormatForMinRectArea(seed)
+            # Then find the oriented bounding box
+            # obbSeed = self.getMinAreaRect(seedConvertedFormat)
+            # print "Now the obbSeed is:", obbSeed
 
             # Append the seed pixels into a temp_array in order to find the COM
             temp_array = []
             temp_array.append(seed)
-
             center_of_mass = self.getCentroidOfSingleContour(temp_array)
+
+            # Compairing the minAreaRect centercoordinate output with the moments center coordinate
+            # print "The center_of_mass is:", center_of_mass
+            # print "Comapired to the other center of mass:", obbSeed[0]
+            # x = int(obbSeed[0][0])
+            # y = int(obbSeed[0][1])
+            # cv2.circle(self.imgDrawings, (x,y), 4, (0, 0, 255), -1)
+            # self.showImg("Testing drawing", self.imgDrawings, 0.5)
             elementList.append(center_of_mass)
 
-            hue_mean, hue_std, numberOfSproutPixels = self.analyseSprouts(sprout)
+            # In order to get all the pixels here, all the coordinates inside a given countour must be
+            # found.
+
+            # hue_mean, hue_std, numberOfSproutPixels = self.analyseSprouts(sprout)
             elementList.append(hue_mean)
             elementList.append(hue_std)
             elementList.append(numberOfSproutPixels)
-            elementList.append(height)              # Note: Here I swopped the height and width, since the output was swopped
+            elementList.append(length)
             elementList.append(width)
             elementList.append(ratio)
             elementList.append(classStamp)
@@ -391,31 +440,27 @@ class ProcessImage(object):
             # Finally append the element list into the resultList
             resultList.append(elementList)
 
-            # Append to seedCenter in order to show the COM on the input image
+            #Append to all the feature lists in order to plot these feature later on a feature space diagram.
             seedCenterList.append(center_of_mass)
-
-            # Append to all the feature lists in order to plot these feature later on a feature space diagram.
-            # However it might end up with a 2D plot with the y-axis as hue_mean and the x-axis as ratio of width/height
-            # Maybe we need to have convex hull, but I gues a simple bounding box is enough. I am not using the rotated bbox,
-            # since it did not work in OpenCV. The normal boundingbox is from the planar library.
             hueMeanList.append(hue_mean)
             hueStdList.append(hue_std)
             numberOfSproutPixelsList.append(numberOfSproutPixels)
-            widthList.append(height)            # Note: Here I swopped the height and width, since the output was swopped
-            heightList.append(width)
+            lengthList.append(length)
+            widthList.append(width)
             ratioList.append(ratio)
             classStampList.append(classStamp)
 
             # Clear the element list for each contour
             elementList = []
 
-            print "-----------------------Done with that given contour --------------------------------------------"
+            # print "-----------------------Done with that given contour --------------------------------------------"
+            # print ""
 
-        print "objectCounter is", objectCounter
         print "seedCounter is", seedCounter
         print "sproutCounter is", sproutCounter
-
-        return resultList, seedCenterList, hueMeanList, hueStdList, numberOfSproutPixelsList, widthList, heightList, ratioList, classStampList
+        print "--------------------- DONE with the contours --------------------"
+        print ""
+        return resultList, seedCenterList, hueMeanList, hueStdList, numberOfSproutPixelsList, lengthList, widthList, ratioList, classStampList
 
     def showImg(self, nameOfWindow, image, scale):
 
@@ -467,9 +512,9 @@ class ProcessImage(object):
         #Find the contours of the thresholded image
         #Note: See OpenCV doc if needed to change the arguments in findContours.
         # Note: The CHAIN_APPROX_SIMPLE only takes the outer coordinates. I.e. a square has only four coordinates instead
-        # of following the edge all around. The CHAIN_APPROX_NONE takes all the pixels.
-        # contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        # of following the edge all around. The CHAIN_APPROX_NONE takes all the pixels around the edge
+        contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # contours, hierarchy = cv2.findContours(contour_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
         #Return the contours. We dont want to use the hierarchy yet
         # However the hierarchy is usefull the detect contours inside a contour or dont detect it.
@@ -525,13 +570,6 @@ class ProcessImage(object):
             centers.append(center)
         return centers
 
-    def getMinAreaRect(self, contours):
-        list_of_rects = []
-        for contour in contours:
-            rect = cv2.minAreaRect(contour)
-            list_of_rects.append(rect)
-        return list_of_rects
-
     def drawCentroid(self, image, centers, size, RGB_list):
         # Color the central coordinates for red bricks with a filled circle
         for center in centers:
@@ -569,6 +607,49 @@ class ProcessImage(object):
     def trackbarListener(self, name, nameOfWindow):
         value = cv2.getTrackbarPos(name, nameOfWindow)
         return value
+
+    def getMinAreaRect(self, list_np):
+        rect = cv2.minAreaRect(list_np)
+        return rect
+
+    def getBoxPoints(self, rect):
+        # http://stackoverflow.com/questions/18207181/opencv-python-draw-minarearect-rotatedrect-not-implemented
+        box = cv2.cv.BoxPoints(rect)
+        box = np.int0(box)
+        p1 = (box[0][0], box[0][1])
+        p2 = (box[1][0], box[1][1])
+        p3 = (box[2][0], box[2][1])
+        p4 = (box[3][0], box[3][1])
+        return p1, p2, p3, p4
+
+    def convertFormatForMinRectArea(self, listOfPixels):
+        list = []
+        for element in listOfPixels:
+            x = element[0]
+            y = element[1]
+            stucture = [[y, x]]
+            list.append(stucture)
+
+        # Convert it to numpy
+        list_np = np.array(list, dtype=np.int32)
+        return list_np
+
+    def getFeatureLabel(self, featureIndex):
+        if featureIndex == 2:
+            featureLabel = 'hue_mean'
+        elif featureIndex == 3:
+            featureLabel = 'hue_std'
+        elif featureIndex == 4:
+            featureLabel = 'number of sprout pixels'
+        elif featureIndex == 5:
+            featureLabel = 'length'
+        elif featureIndex == 6:
+            featureLabel = 'width'
+        elif featureIndex == 7:
+            featureLabel = 'width/length ratio'
+        else:
+            featureLabel = 'No valid features label'
+        return featureLabel
 
 class PlotFigures():
     def __init__(self, string):
@@ -763,13 +844,9 @@ def main():
     image_show_ratio = 0.7
 
     # Training data class 1. Define the first testing data set as class 1
-    imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/DSC_0076_scaled.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/day1_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-
-
-
-
-    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooLong.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day1_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed34Uspiretfroe.jpg", cv2.CV_LOAD_IMAGE_COLOR)
@@ -777,14 +854,15 @@ def main():
 
     # Training data class -1. Define the secound testing data set as class -1
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/ImageFromVideo.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/DSC_0080_scaled.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Do the image processing on the training data class 1
     print "--------------- Now doing the td1 ---------------"
     td1 = ProcessImage(imgTrainingClass1, 1)
 
     # Do the image processing on the training data class -1.
+    print "--------------- Now doing the tdNeg1 ---------------"
     tdNeg1 = ProcessImage(imgTrainingClassNeg1, -1)   #Uncomment this one when all the debugging printout is removed.
 
     # Do the image processing on the testing data class 0
@@ -793,22 +871,26 @@ def main():
     if td1.features and tdNeg1.features:
         #Draw data
 
-        # features[0] # On the zero'th element, the whole resultList is stored. I.e. [[(x,y), hue_mean, hue_std... classStamped],... [..]]
-        # features[1] # On the first element, all the center seed coordinates is stored.
-        # features[2] # On the secound element, all the hue_mean values for each sprout is stored.
-        # features[3] # On the third element, all the hue_std values for each sprout is stored.
-        # features[4] # On the fourth element, the number of sprout pixels values for each sprout is stored.
-        # features[5] # On the firth element, the width values for each sprout is stored.
-        # features[6] # On the sixth element, the height values for each sprout is stored.
-        # features[7]  # On the seventh element, the width/height ratio values for each sprout is stored.
-        # features[8] # On the eighth element, the classStamp values for each sprout is stored.
+        # features[0] # The whole resultList is stored. I.e. [[(x,y), hue_mean, hue_std... classStamped],... [..]]
+        # features[1] # Center seed coordinates
+        # features[2] # Hue_mean
+        # features[3] # Hue_std
+        # features[4] # Number of sprout pixels
+        # features[5] # Length
+        # features[6] # Width
+        # features[7] # Ratio of width/length
+        # features[8] # classStamp   --> Not really a feature.
 
+        featureIndexX = 5
+        featureIndexY = 4
+        featureLabelX = td1.getFeatureLabel(featureIndexX)
+        featureLabelY = td1.getFeatureLabel(featureIndexY)
 
         drawData1 = PlotFigures("Feature space for training data class 1 and class -1")
-        drawData1.plotData(td1.features[7], td1.features[4], "rs", "Class 1")
-        drawData1.plotData(tdNeg1.features[7], tdNeg1.features[4], "bs", "Class -1")
-        drawData1.setXlabel('width/height ratio')
-        drawData1.setYlabel('Number of sprout pixels')
+        drawData1.plotData(td1.features[featureIndexX], td1.features[featureIndexY], "rs", "Class 1")
+        drawData1.plotData(tdNeg1.features[featureIndexX], tdNeg1.features[featureIndexY], "bs", "Class -1")
+        drawData1.setXlabel(featureLabelX)
+        drawData1.setYlabel(featureLabelY)
         drawData1.updateFigure()
 
         #Add the training data
@@ -816,16 +898,24 @@ def main():
         print "The training1 data output is:", td1.features
         print "The training2 data output is:", tdNeg1.features
 
-        # Now we add the training data together and shuffle the data for each
+        # ... and now we shuffle the training data etc... and do the learning....
 
-        # td1.showImg("Input image and fitted to display on screen", td1.img, image_show_ratio)
+
+
+
+
+        # Show some results
+        td1.showImg("Input image and fitted to display on screen", td1.img, image_show_ratio)
 
         # Show the grayscale image
-        #td1.showImg("Grayscale image and fitted to display on screen", td1.imgGray, image_show_ratio)
+        #td1.showImg("Grayscale image and fitted to display on  screen", td1.imgGray, image_show_ratio)
 
         # Show the thresholded image. This contains the seeds and the sprouts with a gray level. Background is black
-        td1.showImg("Thresholded image data class 1 and fitted to display on screen", td1.imgThreshold, image_show_ratio)
-        tdNeg1.showImg("Thresholded image data class -1 and fitted to display on screen", tdNeg1.imgThreshold, image_show_ratio)
+        # td1.showImg("Thresholded image data class 1 and fitted to display on screen", td1.imgThreshold, image_show_ratio)
+        # tdNeg1.showImg("Thresholded image data class -1 and fitted to display on screen", tdNeg1.imgThreshold, image_show_ratio)
+
+        # Show the contours which is the result of the findContours function from OpenCV
+        td1.showImg("Contours", td1.imgContourDrawing, image_show_ratio)
 
         # Show the segmentated sprouts by using HSV
         # td1.showImg("HSV segmented image and fitted to display on screen", td1.imgHSV, image_ratio)
@@ -834,8 +924,8 @@ def main():
         # td1.showImg("HSV segmented image morphed and fitted to display on screen", td1.imgMorph, image_show_ratio)
 
         # Show the addition of the two images, thresholde and HSV
-        td1.showImg("Added training data class 1 and fitted to display on screen", td1.imgSeedAndSprout, image_show_ratio)
-        tdNeg1.showImg("Added training data class -1 and fitted to display on screen", tdNeg1.imgSeedAndSprout, image_show_ratio)
+        # td1.showImg("Added training data class 1 and fitted to display on screen", td1.imgSeedAndSprout, image_show_ratio)
+        # tdNeg1.showImg("Added training data class -1 and fitted to display on screen", tdNeg1.imgSeedAndSprout, image_show_ratio)
 
         # Show the sprouts image
         #td1.showImg("The sprouts images", td1.imgSprouts, image_show_ratio)
@@ -854,7 +944,6 @@ def main():
             print "No features available for td1"
         else:
             print "No features available for td1 and tdNeg1"
-
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
