@@ -18,8 +18,6 @@ import random                       # required to choose random initial weights 
 from PIL import Image
 from planar import BoundingBox      # Required to use https://pythonhosted.org/planar/bbox.html
 
-from FigureDetectionCamera import Perceptron # Here we can get the function from the Python file, called FigureDetectionCamera.py
-
 ##########################################
 # Classes
 ##########################################
@@ -28,7 +26,6 @@ class ProcessImage(object):
 
     #The constructor will run each time an object is assigned to this class.
     def __init__(self, img, classStamp):
-
         # Store which class the image is stamped
         self.classStamp = classStamp
 
@@ -36,7 +33,7 @@ class ProcessImage(object):
         self.img = img
 
         # Placeholder for a debuggig function.
-        self.lastMask = np.zeros(self.img.shape, dtype="uint8")
+        # self.lastMask = np.zeros(self.img.shape, dtype="uint8")
 
         # Set the threshold value to 128, in order to have gray pixels for sprouts and seeds and black pixels for background.
         self.thresholdValue = 128
@@ -694,11 +691,8 @@ class PlotFigures():
     def saveFigure(self):
         plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.name) + ".jpg")
 
-class Perceptron(ProcessImage):
-    def __init__(self, total_training_data):
-        self.training_data = total_training_data
-        random.shuffle(self.training_data)
-
+class Perceptron():
+    def __init__(self):
         #Initial random weights and bias from 0.0 to 1.0
         #self.w = [random.uniform(0.0, 1.0), random.uniform(0.0, 1.0)]
         #self.b = random.uniform(0.0, 1.0)
@@ -721,13 +715,16 @@ class Perceptron(ProcessImage):
         # For the classificaton
         self.class1 = []
         self.classNeg1 = []
-        self.class1_area = []
-        self.class1_compactness = []
-        self.classNeg1_area = []
-        self.classNeg1_compactness = []
+        self.class1_featureX = []
+        self.class1_featureY = []
+        self.classNeg1_featureX = []
+        self.classNeg1_featureY = []
 
-    def startLearn(self, learning_rate):
-        print("Now the perceptron starts")
+    def startLearn(self, learning_rate, total_training_data):
+        # Shuffle the total_training_data before the system starts learning.
+        np.random.shuffle(total_training_data)
+
+        print("Now the perceptron starts...")
 
         #Start the algorithm. RunFlag is already True
         self.true_counter = 0
@@ -735,11 +732,13 @@ class Perceptron(ProcessImage):
             self.true_counter += 1
             #print('-' * 60)
             error_count = 0
-
-            for data in self.training_data:
-                #print("The weights is:", w)
+            for data in total_training_data:
+                # print "Now the dataX is:", data[featureX]
+                # print "Now the dataY is:", data[featureY]
+                # print("The weights is:", self.w)
                 #Calculate the dotproduct between input and weights
                 dot_product = data[0]*self.w[0] + data[1]*self.w[1]
+                # print "And the dot_product is:", dot_product
 
                 #If the dotprodcuct + the bias is >= 0, then result is class 1
                 # else it is class -1.
@@ -770,40 +769,59 @@ class Perceptron(ProcessImage):
                 self.run_flag = False
         print("The number of iterations before the Perceptron stops is:", self.true_counter)
 
-    def getClassifier(self):
-        self.wx = pylab.arange(0, 1, 0.01)
+    def getClassifier(self, xmin, xmax, step):
+        self.wx = pylab.arange(xmin, xmax, step)
         self.wy = (self.w[0]*self.wx)/(-self.w[1]) + (self.b)/(-self.w[1])
 
-    def doClassification(self, testingData, finalImage):
-    #With the ready Perceptron classifier, we can now classify the testing data
-    # and mark that on the original testing image.
+    def doClassification(self, testingData, centerSeedList, finalImage):
+        #With the ready Perceptron classifier, we can now classify the testing data
+        # and mark that on the original testing image.
 
-    #Doing the classification. So if the y is negative, it belongs to class -1
-    # and if the y is positive it belongs to class 1.
-    # Before the testingData is intered the classifier, the data[2] = 0 --> unclassified.
-    # After this for loop the data[2] is either -1 or +1
-        for index in testingData:
+        # Convert it to a numpy array
+        np_testingdata = np.array(testingData, dtype=np.float)
+
+        #Doing the classification. So if the y is negative, it belongs to class -1
+        # and if the y is positive it belongs to class 1.
+        # Before the testingData is intered the classifier, the data[2] = 0 --> unclassified.
+        # After this for loop the data[2] is either -1 or +1
+
+        for index, centerSeedList in zip(np_testingdata, centerSeedList):
+
             y = index[0]*self.w[0] + index[1]*self.w[1] + self.b
             if y >= 0:
                 index[2] = 1
-                self.class1.append(index)
+                cv2.circle(finalImage, centerSeedList, 5, (0, 0, 255), -1)
             else:
                 index[2] = -1
-                self.classNeg1.append(index)
+                cv2.circle(finalImage, centerSeedList, 5, (255, 0, 0), -1)
 
-        # # Extract the area and compactness for each class
-        # self.class1_feature1 = self.extract(self.class1, 0)
-        # self.class1_feature2 = self.extract(self.class1, 1)
-        # self.classNeg1_feature1 = self.extract(self.classNeg1, 0)
-        # self.classNeg1_feature2 = self.extract(self.classNeg1, 1)
+        return np_testingdata
 
-        for index in testingData:
-            if(index[2] == -1):
-                cv2.circle(finalImage, index[3], 5, (255, 0, 0), -1)
-            elif(index[2] == 1):
-                cv2.circle(finalImage, index[3], 5, (0, 0, 255), -1)
+    def normalizeData(self, list):
+        maxValueOfList = max(list)
+        return np.array(list)/float(maxValueOfList)
+
+    def getTotalList(self, list1, list2, list3):
+        outList = []
+        for elementInList1, elementInList2, elementInList3 in zip(list1, list2, list3):
+            outList.append((elementInList1, elementInList2, elementInList3))
+        return outList
+
+    def getIndividualList(self, totalList):
+        class1ListX = []
+        class1ListY  = []
+        classNeg1ListX = []
+        classNeg1ListY = []
+        for element in totalList:
+            if int(element[2]) is 1:
+                class1ListX.append(element[0])
+                class1ListY.append(element[1])
+            elif int(element[2]) is -1:
+                classNeg1ListX.append(element[0])
+                classNeg1ListY.append(element[1])
             else:
-                print("Should not come into this else")
+                print "Should not get down to this else"
+        return class1ListX, class1ListY, classNeg1ListX, classNeg1ListY
 
 class ProcessVideo(ProcessImage):
     #The constructor will run each time an object is assigned to this class.
@@ -839,6 +857,17 @@ def main():
     # seed34Uspiretfroe.jpg
     # seed35GulSpire.jpg
     # seed36SkadetSpire.jpg
+    #
+    # Overview of featuers
+    # features[0] # The whole resultList is stored. I.e. [[(x,y), hue_mean, hue_std... classStamped],... [..]]
+    # features[1] # Center seed coordinates
+    # features[2] # Hue_mean
+    # features[3] # Hue_std
+    # features[4] # Number of sprout pixels
+    # features[5] # Length
+    # features[6] # Width
+    # features[7] # Ratio of width/length
+    # features[8] # classStamp   --> Not really a feature.
     ################################################################################################
 
     image_show_ratio = 0.7
@@ -855,7 +884,11 @@ def main():
     # Training data class -1. Define the secound testing data set as class -1
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/ImageFromVideo.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day8_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # Testing data class 0.
+    imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
 
     # Do the image processing on the training data class 1
     print "--------------- Now doing the td1 ---------------"
@@ -865,12 +898,12 @@ def main():
     print "--------------- Now doing the tdNeg1 ---------------"
     tdNeg1 = ProcessImage(imgTrainingClassNeg1, -1)   #Uncomment this one when all the debugging printout is removed.
 
+    print "--------------- Now doing the testing data ---------------"
     # Do the image processing on the testing data class 0
-    # testData = ProcessImage(imgTrainingClassNeg1, 0)  #Uncomment this one when all the debugging printout is removed.
+    testData = ProcessImage(imgTestingData, 0)  #Uncomment this one when all the debugging printout is removed.
 
-    if td1.features and tdNeg1.features:
-        #Draw data
-
+    # Make sure that there is available features in the training and testing data
+    if td1.features and tdNeg1.features and testData:
         # features[0] # The whole resultList is stored. I.e. [[(x,y), hue_mean, hue_std... classStamped],... [..]]
         # features[1] # Center seed coordinates
         # features[2] # Hue_mean
@@ -886,39 +919,113 @@ def main():
         featureLabelX = td1.getFeatureLabel(featureIndexX)
         featureLabelY = td1.getFeatureLabel(featureIndexY)
 
+        # Draw featurespace - not normalized
         drawData1 = PlotFigures("Feature space for training data class 1 and class -1")
         drawData1.plotData(td1.features[featureIndexX], td1.features[featureIndexY], "rs", "Class 1")
         drawData1.plotData(tdNeg1.features[featureIndexX], tdNeg1.features[featureIndexY], "bs", "Class -1")
+        # drawData1.plotData(testData.features[featureIndexX], testData.features[featureIndexY], "gs", "Class 0") # Uncomment this just to see the mix data in the feature space
         drawData1.setXlabel(featureLabelX)
         drawData1.setYlabel(featureLabelY)
         drawData1.updateFigure()
 
-        #Add the training data
-        total_training_data = td1.features + tdNeg1.features
-        print "The training1 data output is:", td1.features
-        print "The training2 data output is:", tdNeg1.features
+        # Initialize the Perceptron, in order to get acces to the normalizeData function
+        p = Perceptron()
 
-        # ... and now we shuffle the training data etc... and do the learning....
+        # Add the training data together, also with the testing data to insure propper normalization
+        addedFeatureX = td1.features[featureIndexX] + tdNeg1.features[featureIndexX] + testData.features[featureIndexX]
+        addedFeatureY = td1.features[featureIndexY] + tdNeg1.features[featureIndexY] + testData.features[featureIndexY]
+        classStampList = td1.features[8] + tdNeg1.features[8] + testData.features[8]
+        centerSeedList = testData.features[1]
 
+        # Normalize the data here, now with the testing data as well.
+        normalizedAddedFeatureX = p.normalizeData(addedFeatureX)
+        normalizedAddedFeatureY = p.normalizeData(addedFeatureY)
 
+        # For only getting the training data set, we have to get the testdata out of the normalizedAddedFeatureX and
+        # normalizedAddedFeatureY. Since know that we stack the testing data at the end, then we just remove the last n elements
+        # where n is the length of the testingdata.
 
+        # Here we read the testing data only
+        classZeroListX = normalizedAddedFeatureX[-len(testData.features[featureIndexX]):]
+        classZeroListY = normalizedAddedFeatureY[-len(testData.features[featureIndexY]):]
+
+        # Here we read the training data only
+        normalizedAddedFeatureX = normalizedAddedFeatureX[0:-len(testData.features[featureIndexX])]
+        normalizedAddedFeatureY = normalizedAddedFeatureY[0:-len(testData.features[featureIndexY])]
+
+        # Create the list, that stores only the selected features, which was defined in line 905, 906
+        total_training_data = p.getTotalList(normalizedAddedFeatureX, normalizedAddedFeatureY, classStampList)
+
+        # Get the class1, classNeg1  lists in order to plot then with individual color.
+        class1ListX, class1ListY, classNeg1ListX, classNeg1ListY = p.getIndividualList(total_training_data)
+
+        #Run the Perceptron algorithm to learn the classifier something...
+        learning_rate = 0.5
+        p.startLearn(learning_rate, total_training_data)
+        p.getClassifier(0, 1, 0.01)
+
+        # Draw the data with the classifier line and with normalized data
+        drawData2 = PlotFigures("Normalized feature space with classifier seperater - The perceptron")
+        drawData2.plotData(p.wx, p.wy, "b-", "The perceptron line")
+        drawData2.plotData(class1ListX, class1ListY, "rs", "Class 1")
+        drawData2.plotData(classNeg1ListX, classNeg1ListY, "bs", "Class -1")
+        # drawData2.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+        drawData2.setXlabel(featureLabelX)
+        drawData2.setYlabel(featureLabelY)
+        drawData2.updateFigure()
+
+        # Draw the data with the classifier line and the normalized testing data
+        drawData3 = PlotFigures("Normalized feature space with testing data and classifier seperater")
+        drawData3.plotData(p.wx, p.wy, "b-", "The perceptron line")
+        drawData3.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+        drawData3.setXlabel(featureLabelX)
+        drawData3.setYlabel(featureLabelY)
+        drawData3.updateFigure()
+
+        print "The classZeroListX is:", classZeroListX
+        print "The classZeroListY is:", classZeroListY
+
+        # In order to draw the blue and red color on the normalize data, we have to get the list of all
+        # the elements which has class 1 and all the elements class -1. This is done after the training data is added
+        # in order to insure propper normalization. If I do normalization before the training data is added,
+        # then the normalization is not correct. It gives a little more work, but is the correct way to go.
+
+        # Create the list, that stores only the selected features, which was defined in line 905, 906
+        zeroList = np.zeros(len(testData.features[featureIndexX]), dtype=np.int)
+        total_testing_data = p.getTotalList(classZeroListX, classZeroListY, zeroList)
+        classifiedTestingData = p.doClassification(total_testing_data, centerSeedList, testData.imgDrawings)
+
+        # Get the testing data which has been classfied as class1 or classNeg1 lists
+        Finalclass1ListX, Finalclass1ListY, FinalclassNeg1ListX, FinalclassNeg1ListY = p.getIndividualList(classifiedTestingData)
+
+        # Draw the data with the classifier line and where the testing data has been classified.
+        drawData4 = PlotFigures("Normalized testing data which has been classified")
+        drawData4.plotData(p.wx, p.wy, "b-", "The perceptron line")
+        drawData4.plotData(Finalclass1ListX, Finalclass1ListY, "rs", "Class 1")
+        drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class 1")
+        drawData4.setXlabel(featureLabelX)
+        drawData4.setYlabel(featureLabelY)
+        drawData4.updateFigure()
 
 
         # Show some results
-        td1.showImg("Input image and fitted to display on screen", td1.img, image_show_ratio)
+        # td1.showImg("Input image and fitted to display on screen", td1.img, image_show_ratio)
 
         # Show the grayscale image
         #td1.showImg("Grayscale image and fitted to display on  screen", td1.imgGray, image_show_ratio)
 
         # Show the thresholded image. This contains the seeds and the sprouts with a gray level. Background is black
-        # td1.showImg("Thresholded image data class 1 and fitted to display on screen", td1.imgThreshold, image_show_ratio)
-        # tdNeg1.showImg("Thresholded image data class -1 and fitted to display on screen", tdNeg1.imgThreshold, image_show_ratio)
+        td1.showImg("Thresholded image data class 1 and fitted to display on screen", td1.imgThreshold, image_show_ratio)
+        tdNeg1.showImg("Thresholded image data class -1 and fitted to display on screen", tdNeg1.imgThreshold, image_show_ratio)
 
         # Show the contours which is the result of the findContours function from OpenCV
-        td1.showImg("Contours", td1.imgContourDrawing, image_show_ratio)
+        # td1.showImg("Contours td1", td1.imgContourDrawing, image_show_ratio)
+        # tdNeg1.showImg("Contours tdNeg1", tdNeg1.imgContourDrawing, image_show_ratio)
+        # testData.showImg("Contours testdata", testData.imgContourDrawing, image_show_ratio)
 
         # Show the segmentated sprouts by using HSV
-        # td1.showImg("HSV segmented image and fitted to display on screen", td1.imgHSV, image_ratio)
+        # td1.showImg("HSV segmented image class 1 and fitted to display on screen", td1.imgHSV, image_show_ratio)
+        # tdNeg1.showImg("HSV segmented image class -1 and fitted to display on screen tdNeg1", tdNeg1.imgHSV, image_show_ratio)
 
         # Show the morph on the HSV to get nicer sprouts
         # td1.showImg("HSV segmented image morphed and fitted to display on screen", td1.imgMorph, image_show_ratio)
@@ -936,6 +1043,8 @@ def main():
         # Show the input image with indicated center of mass coordinates of each seed.
         td1.showImg("Show trainingdata class 1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", td1.imgDrawings, image_show_ratio)
         tdNeg1.showImg("Show trainingdata class -1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", tdNeg1.imgDrawings, image_show_ratio)
+        testData.showImg("Show final classification result in image and let it be fitted to display on screen", testData.imgDrawings, image_show_ratio)
+
 
     else:
         if td1.features:

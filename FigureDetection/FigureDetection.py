@@ -211,10 +211,12 @@ def NormalizeData(data, maxValueArea, maxValueCompactness):
 #    maxArea = max(temp_area)
 #    maxCompactness = max(temp_compactness)
 #
+    print "Inside normalize data"
     #Normalize area and compactness in data, so it form 0 to 1.
     for index in data:
         norm_area = index[0]/maxValueArea
         index[0] = norm_area
+        print "The norm_area is now:", norm_area
 
         norm_compactness = index[1]/maxValueCompactness
         index[1] = norm_compactness
@@ -234,12 +236,15 @@ def FindMaxValueOfLists(list1, list2, element):
 
     #Find the maximum value of area
     maxValue1 = max(temp)
+    print "The maxValue1 is:", maxValue1
 
     for index in list2:
         temp.append(index[element])
 
     maxValue2 = max(temp)
+    print "The maxValue2 is:", maxValue2
     maxValue = (maxValue1 + maxValue2)/2
+    print "the maxValue in the findMaxValueOfList is:", maxValue
     return maxValue
 
 
@@ -319,6 +324,8 @@ def main():
     trainingData = featureTraining1 + featureTraining2
     testingData = featureTesting
 
+    print "The training data contains:", featureTraining1
+
     #Before finding the maximum value of both feature list
     maxValueArea = FindMaxValueOfLists(trainingData, testingData, 0)
     maxValueCompactness = FindMaxValueOfLists(trainingData, testingData, 1)
@@ -354,9 +361,9 @@ def main():
     result = []
 
     #Shuffle the trainingData before sending the data into the Perceptron
-    #print ("Before shuffle", trainingData)
+    print ("Before shuffle", trainingData)
     random.shuffle(trainingData)
-    #print("And the shuffle is:",trainingData)
+    print("And the shuffle is:",trainingData)
 
     #The result[0] is the final weights and result[1] is the final bias
     result = Perceptron(trainingData, learning_rate)
