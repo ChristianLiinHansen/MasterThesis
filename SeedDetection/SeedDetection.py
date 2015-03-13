@@ -56,17 +56,20 @@ class ProcessImage(object):
         self.imgMorph = self.getOpening(self.imgHSV, 1, 2)          # Remove any noise pixels with erosion first and then dilate after (Opening)
         self.imgMorph = self.getOpening(self.imgMorph, 1, 0)      # However erode again after to get same sprouts size again
 
-        # self.showImg("Test imgHSV", self.imgHSV, 0.5)
-        # self.showImg("Test imgMorph", self.imgMorph, 0.5)
-        # self.showImg("Input billede", self.img, 0.5)
-        # cv2.waitKey(0)
-
         #Define the images that we want to work with.
         self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
         self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgMorph) # Let the background be black,seeds be gray and sprouts be white
         # self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgHSV) # Let the background be black,seeds be gray and sprouts be white
         # self.imgSprouts = self.imgMorph.copy() # Define the sprouts as just the morphed HSV image.
         # self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts) # Define the seeds as the threshold image without the sprouts
+
+
+        # self.showImg("Test imgHSV", self.imgHSV, 0.5)
+        # self.showImg("Test imgMorph", self.imgMorph, 0.5)
+        # self.showImg("Input image", self.img, 0.5)
+        # self.showImg("Thresholded image", self.imgThreshold, 0.5)
+        # self.showImg("Added images", self.imgSeedAndSprout, 0.5)
+        # cv2.waitKey(0)
 
         # # Trying to do "cut" close seeds loose, by first applying the erosion and then som dilation afterwards
         # # Hopefully the effect is that small point connections will be removed. Perhaps only do erosion of the thresholded image
@@ -76,24 +79,23 @@ class ProcessImage(object):
         # cv2.waitKey(0)
 
         # contours
-        self.contoursThreshold = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
+        self.contoursFromThresholdImg = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
         # self.contoursSeeds = self.getContours(self.imgSeeds)          # Find contours of seeds, to later find the center of mass (COM) of the seeds.
 
         # Get the countour image, which shows the result of the getContours.
-        self.imgContourDrawing = self.drawContour(self.imgThreshold, self.contoursThreshold)
+        print "Now we draw the contors"
+        self.imgContourDrawing = self.drawContour(self.imgThreshold, self.contoursFromThresholdImg)
 
         # img_copy = self.imgThreshold.copy()
         # mask = np.zeros(img_copy.shape, dtype="uint8")
         # self.contourDrawing =
 
-        # # Draw the contours:
-        # self.showImg("Showing the image, where we do findCountours on", self.imgThreshold, 0.5)
+        # # # Draw the contours:
         # img_copy = self.imgThreshold.copy()
         # mask = np.zeros(img_copy.shape, dtype="uint8")
         # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-        # cv2.drawContours(mask, self.contoursThreshold, -1, (0,255,0), 1)
+        # cv2.drawContours(mask, self.contoursThreshold, -1, (0,255,0), 2)
         # self.showImg("Drawing the contours", mask, 0.5)
-        # cv2.waitKey(0)
 
         # # print "Now to the contoursThreshold"
         # print "The size of this is:", len(self.contoursThreshold)
@@ -111,12 +113,12 @@ class ProcessImage(object):
 
         # The contours taking from imgThreshold contains a lot of noice blobs.
         # Therefore a simple areafilter is checking
-        self.contoursThresholdFiltered = self.getContoursFilter(self.contoursThreshold, 1000, 5000)
-        print "The number of contours went from:", len(self.contoursThreshold), " to reduced size of:", len(self.contoursThresholdFiltered)
+        self.contoursFromThresholdImgFiltered = self.getContoursFilter(self.contoursFromThresholdImg, 1000, 5000)
+        print "The number of contours went from:", len(self.contoursFromThresholdImg), " to reduced size of:", len(self.contoursFromThresholdImgFiltered)
 
         # Now for each contour, find out which pixels belong as a sprout pixel and seed pixel
-        if self.contoursThresholdFiltered:
-            self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursThresholdFiltered, self.classStamp) # The 100 is not testet to fit the smallest sprout
+        if self.contoursFromThresholdImgFiltered:
+            self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursFromThresholdImgFiltered, self.classStamp) # The 100 is not testet to fit the smallest sprout
 
             # Draw the center of mass, on the copy of the input image.
             # Note: Somehow it seems there is a little offset in the input image, when the sprouts are longer.
@@ -202,7 +204,14 @@ class ProcessImage(object):
             cv2.putText(img, "width:" + str(width), (rows-offsetCols,                       cols+5*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
             cv2.putText(img, "ratio:" + str(ratio), (rows-offsetCols,                       cols+6*offsetRows), cv2.FONT_HERSHEY_SIMPLEX, textSize, textColor, textWidth)
 
-    def drawContour(self, img, contour):
+    def drawContour(self, img, contours):
+        # img_copy = self.imgThreshold.copy()
+        # mask = np.zeros(img_copy.shape, dtype="uint8")
+        # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+        # cv2.drawContours(mask, self.contoursThreshold, -1, (0,255,0), 2)
+        # self.showImg("Drawing the contours", mask, 0.5)
+
+
         # Copy the image from the argument "img"
         img_copy = img.copy()
 
@@ -215,7 +224,7 @@ class ProcessImage(object):
         # Draw the contours in the empty image mask
         lineWidth = 1
         contourColor = (0, 255, 0)
-        cv2.drawContours(mask, contour, -1, contourColor, lineWidth)
+        cv2.drawContours(mask, contours, -1, contourColor, lineWidth)
 
         return mask
 
@@ -874,21 +883,17 @@ def main():
 
     # Training data class 1. Define the first testing data set as class 1
     imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooLong.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day1_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed34Uspiretfroe.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/Parametre4/par4test.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Training data class -1. Define the secound testing data set as class -1
-    # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/seeds/ImageFromVideo.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/scaledDown.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day8_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day8_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+
     # Testing data class 0.
     imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-
 
     # Do the image processing on the training data class 1
     print "--------------- Now doing the td1 ---------------"
@@ -969,6 +974,8 @@ def main():
         drawData2.plotData(p.wx, p.wy, "b-", "The perceptron line")
         drawData2.plotData(class1ListX, class1ListY, "rs", "Class 1")
         drawData2.plotData(classNeg1ListX, classNeg1ListY, "bs", "Class -1")
+        drawData2.limit_y(0,1)
+        drawData2.limit_x(0,1)
         # drawData2.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
         drawData2.setXlabel(featureLabelX)
         drawData2.setYlabel(featureLabelY)
@@ -978,6 +985,8 @@ def main():
         drawData3 = PlotFigures("Normalized feature space with testing data and classifier seperater")
         drawData3.plotData(p.wx, p.wy, "b-", "The perceptron line")
         drawData3.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+        drawData3.limit_y(0,1)
+        drawData3.limit_x(0,1)
         drawData3.setXlabel(featureLabelX)
         drawData3.setYlabel(featureLabelY)
         drawData3.updateFigure()
@@ -1003,48 +1012,59 @@ def main():
         drawData4.plotData(p.wx, p.wy, "b-", "The perceptron line")
         drawData4.plotData(Finalclass1ListX, Finalclass1ListY, "rs", "Class 1")
         drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class 1")
+        drawData4.limit_y(0,1)
+        drawData4.limit_x(0,1)
         drawData4.setXlabel(featureLabelX)
         drawData4.setYlabel(featureLabelY)
         drawData4.updateFigure()
 
-
+        ###############################################################################
         # Show some results
-        # td1.showImg("Input image and fitted to display on screen", td1.img, image_show_ratio)
+        ###############################################################################
+
+        # Training data class 1
+        td1.showImg("Input image class 1 and fitted to display on screen", td1.img, image_show_ratio)
+
+        # Training data class -1
+        tdNeg1.showImg("Input image class -1 and fitted to display on screen", tdNeg1.img, image_show_ratio)
+
+        # Testing data class 0
+        testData.showImg("Input image class 0 and fitted to display on screen", testData.img, image_show_ratio)
 
         # Show the grayscale image
-        #td1.showImg("Grayscale image and fitted to display on  screen", td1.imgGray, image_show_ratio)
+        #td1.showImg("Grayscale image class 1 and fitted to display on  screen", td1.imgGray, image_show_ratio)
+        # tdNeg1.showImg("Grayscale image class -1 and fitted to display on  screen", tdNeg1.imgGray, image_show_ratio)
+        # testData.showImg("Grayscale image class 0 and fitted to display on  screen", testData.imgGray, image_show_ratio)
 
         # Show the thresholded image. This contains the seeds and the sprouts with a gray level. Background is black
         td1.showImg("Thresholded image data class 1 and fitted to display on screen", td1.imgThreshold, image_show_ratio)
         tdNeg1.showImg("Thresholded image data class -1 and fitted to display on screen", tdNeg1.imgThreshold, image_show_ratio)
+        testData.showImg("Thresholded image data class 0 and fitted to display on screen", testData.imgThreshold, image_show_ratio)
 
         # Show the contours which is the result of the findContours function from OpenCV
-        # td1.showImg("Contours td1", td1.imgContourDrawing, image_show_ratio)
-        # tdNeg1.showImg("Contours tdNeg1", tdNeg1.imgContourDrawing, image_show_ratio)
-        # testData.showImg("Contours testdata", testData.imgContourDrawing, image_show_ratio)
+        td1.showImg("Contours td1", td1.imgContourDrawing, image_show_ratio)
+        tdNeg1.showImg("Contours tdNeg1", tdNeg1.imgContourDrawing, image_show_ratio)
+        testData.showImg("Contours testdata", testData.imgContourDrawing, image_show_ratio)
 
         # Show the segmentated sprouts by using HSV
-        # td1.showImg("HSV segmented image class 1 and fitted to display on screen", td1.imgHSV, image_show_ratio)
-        # tdNeg1.showImg("HSV segmented image class -1 and fitted to display on screen tdNeg1", tdNeg1.imgHSV, image_show_ratio)
+        td1.showImg("HSV segmented image class 1 and fitted to display on screen", td1.imgHSV, image_show_ratio)
+        tdNeg1.showImg("HSV segmented image class -1 and fitted to display on screen tdNeg1", tdNeg1.imgHSV, image_show_ratio)
+        testData.showImg("HSV segmented image class 0 and fitted to display on screen tdNeg1", testData.imgHSV, image_show_ratio)
 
         # Show the morph on the HSV to get nicer sprouts
-        # td1.showImg("HSV segmented image morphed and fitted to display on screen", td1.imgMorph, image_show_ratio)
+        td1.showImg("HSV segmented image morphed class 1 and fitted to display on screen", td1.imgMorph, image_show_ratio)
+        tdNeg1.showImg("HSV segmented image morphed class -1 and fitted to display on screen", tdNeg1.imgMorph, image_show_ratio)
+        testData.showImg("HSV segmented image morphed class 0 and fitted to display on screen", testData.imgMorph, image_show_ratio)
 
         # Show the addition of the two images, thresholde and HSV
-        # td1.showImg("Added training data class 1 and fitted to display on screen", td1.imgSeedAndSprout, image_show_ratio)
-        # tdNeg1.showImg("Added training data class -1 and fitted to display on screen", tdNeg1.imgSeedAndSprout, image_show_ratio)
-
-        # Show the sprouts image
-        #td1.showImg("The sprouts images", td1.imgSprouts, image_show_ratio)
-
-        # Show te seed image
-        #td1.showImg("The seeds images", td1.imgSeeds, image_show_ratio)
+        td1.showImg("Added training data class 1 and fitted to display on screen", td1.imgSeedAndSprout, image_show_ratio)
+        tdNeg1.showImg("Added training data class -1 and fitted to display on screen", tdNeg1.imgSeedAndSprout, image_show_ratio)
+        testData.showImg("Added training data class 0 and fitted to display on screen", testData.imgSeedAndSprout, image_show_ratio)
 
         # Show the input image with indicated center of mass coordinates of each seed.
         td1.showImg("Show trainingdata class 1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", td1.imgDrawings, image_show_ratio)
         tdNeg1.showImg("Show trainingdata class -1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", tdNeg1.imgDrawings, image_show_ratio)
         testData.showImg("Show final classification result in image and let it be fitted to display on screen", testData.imgDrawings, image_show_ratio)
-
 
     else:
         if td1.features:

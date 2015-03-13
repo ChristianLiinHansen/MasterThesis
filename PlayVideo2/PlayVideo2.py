@@ -24,13 +24,13 @@ class CameraDriver:
 
         # Set focus to a specific value. High values for nearby objects and
         # low values for distant objects.
-        self.absoluteFocus = np.array(20, dtype=np.uint8)
+        self.absoluteFocus = np.array(40, dtype=np.uint8)
 
          # sharpness (int)    : min=0 max=255 step=1 default=128 value=128
         self.sharpness = np.array(200, dtype=np.uint8)
 
         # Exposure min=3 max=2047 step=1 default=250 value=250 flags=inactive
-        self.absoluteExposure = np.array(250, dtype=np.uint16)
+        self.absoluteExposure = np.array(260, dtype=np.uint16)
 
         # Take a picture bottom
         self.bottom = np.array(0, dtype=np.uint8)
@@ -168,7 +168,7 @@ def main():
     image_show_ratio = 0.5
 
     # Calling the CameraDriver with cameraIndex as argument. Could switch to 1 og 2 sometimes...
-    cd = CameraDriver(0)
+    cd = CameraDriver(1)
 
     # Setting the names of different windows
     nameOfTrackBarWindow = "Trackbar settings"
