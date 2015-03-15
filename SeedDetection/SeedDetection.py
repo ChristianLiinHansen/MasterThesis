@@ -40,15 +40,57 @@ class ProcessImage(object):
 
         #Hardcoded values in HSV which has nice properties to find the sprouts.
         self.minHue = 22
-        self.maxHue = 255
+        self.maxHue = 180
         self.minSaturation = 0
         self.maxSaturation = 255
         self.minValue = 147
         self.maxValue = 255
 
-        # The hue min and max range.
+        # Very bad coding... while(1) inside a constructor? Never mind...
+        # However used to readjust the HSV range before the program continues...
+        print "Program is on halt here"
+        img = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/pauseScreen.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+        #Inside here the ajusting HSV should be made
         self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
         self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
+
+        # Addin trackbars to adjust the parameters in the HSV segmentation
+        self.addTrackbar("Min Hue", "The HSV segmentation with trackbar", self.minHue, 180)
+        self.addTrackbar("Max Hue", "The HSV segmentation with trackbar", self.maxHue, 180)
+        self.addTrackbar("Min Saturation", "The HSV segmentation with trackbar", self.minSaturation, 255)
+        self.addTrackbar("Max Saturation", "The HSV segmentation with trackbar", self.maxSaturation, 255)
+        self.addTrackbar("Min Value", "The HSV segmentation with trackbar", self.minValue, 255)
+        self.addTrackbar("Max Value", "The HSV segmentation with trackbar", self.maxValue, 255)
+
+        while True:
+            k = cv2.waitKey(30) & 0xff
+            self.showImg("PauseScreen", img, 1)
+            if k is 27:
+                print("User closed the program...")
+                break
+
+            # Listen to the change of the parameters
+            self.minHue = self.trackbarListener("Min Hue", "The HSV segmentation with trackbar")
+            self.maxHue = self.trackbarListener("Max Hue", "The HSV segmentation with trackbar")
+            self.minSaturation = self.trackbarListener("Min Saturation", "The HSV segmentation with trackbar")
+            self.maxSaturation = self.trackbarListener("Max Saturation", "The HSV segmentation with trackbar")
+            self.minValue = self.trackbarListener("Min Value", "The HSV segmentation with trackbar")
+            self.maxValue = self.trackbarListener("Max Value", "The HSV segmentation with trackbar")
+
+
+            # Show the result after the HSV
+            self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
+            self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
+            self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
+            self.showImg("The HSV segmentation with trackbar", self.imgHSV, 0.5)
+
+        print "Program restarted here..."
+        cv2.destroyWindow("PauseScreen")
+
+
+
+
 
         # Some primary image processing
         self.imgGray = self.getGrayImage()
@@ -113,7 +155,8 @@ class ProcessImage(object):
 
         # The contours taking from imgThreshold contains a lot of noice blobs.
         # Therefore a simple areafilter is checking
-        self.contoursFromThresholdImgFiltered = self.getContoursFilter(self.contoursFromThresholdImg, 1000, 5000)
+        self.contoursFromThresholdImgFiltered, listOfAreas = self.getContoursFilter(self.contoursFromThresholdImg, 1000, 9000)
+
         print "The number of contours went from:", len(self.contoursFromThresholdImg), " to reduced size of:", len(self.contoursFromThresholdImgFiltered)
 
         # Now for each contour, find out which pixels belong as a sprout pixel and seed pixel
@@ -131,6 +174,17 @@ class ProcessImage(object):
         else:
             self.features = None
 
+    def trackbarListener(self, nameOfTrackbar, nameOfWindow):
+        value = cv2.getTrackbarPos(nameOfTrackbar, nameOfWindow)
+        return value
+
+    def addTrackbar(self, nameOfTrackbar, nameOfWindow, value, maxValue):
+        cv2.namedWindow(nameOfWindow)
+        cv2.createTrackbar(nameOfTrackbar, nameOfWindow, value, maxValue, self.nothing)
+
+    def nothing(self, x):
+        pass
+
     def getRatio(self, length, width):
         if (length or width) == 0:
             ratio = 0
@@ -140,35 +194,32 @@ class ProcessImage(object):
 
     def getContoursFilter(self, contours, minAreaThreshold, maxAreaThreshold):
         temp_contour = []
+        temp_contourArea = []
         contourAreaMax = 0
         contourAreaMin = maxAreaThreshold
-
-        self.maxContourArea = 0
 
         for contour in contours:
             #Get the area of the given contour, in order to check if that contour is actually something useful, like a seed or sprout.
             contour_area = cv2.contourArea(contour, False)
-            # print "The contour area of this contour is:", contour_area
+
+            if contour_area > contourAreaMax:
+                contourAreaMax = contour_area
+
+            if (contour_area < contourAreaMin):
+                contourAreaMin = contour_area
 
             # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
             if (contour_area < minAreaThreshold) or (contour_area > maxAreaThreshold):
                 # print "The contour area is", contour_area, "and hence skipped"
                 continue
 
-            else:
-
-                if contour_area > contourAreaMax:
-                    contourAreaMax = contour_area
-
-                if contour_area < contourAreaMin:
-                    contourAreaMin = contour_area
-
-                temp_contour.append(contour)
+            temp_contourArea.append(contour_area)
+            temp_contour.append(contour)
 
         # print "Now contours looks like this:", temp_contour
         print "The contourAreaMax was:", contourAreaMax
         print "The contourAreaMin was:", contourAreaMin
-        return temp_contour
+        return temp_contour, temp_contourArea
 
     def getTextForContours(self, img, resultList):
         # print "We are inside the getTextForContours"
@@ -222,7 +273,7 @@ class ProcessImage(object):
         mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
 
         # Draw the contours in the empty image mask
-        lineWidth = 1
+        lineWidth = 2
         contourColor = (0, 255, 0)
         cv2.drawContours(mask, contours, -1, contourColor, lineWidth)
 
@@ -312,17 +363,29 @@ class ProcessImage(object):
 
     def drawSproutBoundingBox(self, p1, p2, p3, p4):
         # Draw the oriente bouningbox
+        lineWidth = 3
 
         if self.classStamp is 1:
             boundingBoxColor = (0, 0, 255)
-        else:
-            boundingBoxColor = (255, 0, 0)
+            cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
 
-        lineWidth = 3
-        cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
-        cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
-        cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
-        cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
+        elif self.classStamp is -1:
+            boundingBoxColor = (255, 0, 0)
+            cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
+        else:
+            # In case this looks ugly... I agree. But I was too lazy to make a function that draws those lines
+            # I just wanted to be able to outcomment drawing the boundingbox for any of the classes.
+            boundingBoxColor = (0, 255, 0)
+            cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
+            cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
 
     def getLengthAndWidthFromSprout(self, obb):
         # Get the length, width and angle
@@ -677,8 +740,6 @@ class PlotFigures():
         #Set grid on, limit the y axis (not the x yet) and put names on axis
         plt.grid(True)
 
-        self.saveFigure()
-
     def setXlabel(self, string_x):
         plt.xlabel(string_x)
 
@@ -696,6 +757,7 @@ class PlotFigures():
 
     def updateFigure(self):
         plt.show(block=False)
+        self.saveFigure()
 
     def saveFigure(self):
         plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.name) + ".jpg")
@@ -882,18 +944,22 @@ def main():
     image_show_ratio = 0.7
 
     # Training data class 1. Define the first testing data set as class 1
-    imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooLong.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooLong.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/Parametre4/par4test.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Training data class -1. Define the secound testing data set as class -1
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed33GodeSpirer.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day8_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
 
     # Testing data class 0.
-    imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed31Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
 
     # Do the image processing on the training data class 1
     print "--------------- Now doing the td1 ---------------"
@@ -966,8 +1032,8 @@ def main():
 
         #Run the Perceptron algorithm to learn the classifier something...
         learning_rate = 0.5
-        p.startLearn(learning_rate, total_training_data)
-        p.getClassifier(0, 1, 0.01)
+        # p.startLearn(learning_rate, total_training_data)
+        # p.getClassifier(0, 1, 0.01)
 
         # Draw the data with the classifier line and with normalized data
         drawData2 = PlotFigures("Normalized feature space with classifier seperater - The perceptron")
@@ -985,6 +1051,10 @@ def main():
         drawData3 = PlotFigures("Normalized feature space with testing data and classifier seperater")
         drawData3.plotData(p.wx, p.wy, "b-", "The perceptron line")
         drawData3.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+
+        # Note: The legend is a little fucked... If there is only two elements, the Perceptron line and the testin data
+        # that has not been classified, then the text of Perceptron goes out into the right margin of the image.
+        # IF we add anohter data set, then the text aligns... HMm.
         drawData3.limit_y(0,1)
         drawData3.limit_x(0,1)
         drawData3.setXlabel(featureLabelX)
@@ -1011,7 +1081,7 @@ def main():
         drawData4 = PlotFigures("Normalized testing data which has been classified")
         drawData4.plotData(p.wx, p.wy, "b-", "The perceptron line")
         drawData4.plotData(Finalclass1ListX, Finalclass1ListY, "rs", "Class 1")
-        drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class 1")
+        drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class -1")
         drawData4.limit_y(0,1)
         drawData4.limit_x(0,1)
         drawData4.setXlabel(featureLabelX)
