@@ -13,6 +13,7 @@ from pexpect import searcher_re
 from scipy.maxentropy.maxentropy import conditionalmodel
 import cv2                          # required for use OpenCV
 import matplotlib.pyplot as plt     # required for plotting
+import matplotlib
 import pylab                        # required for arrange doing the wx list
 import random                       # required to choose random initial weights and shuffle data
 from PIL import Image
@@ -39,12 +40,20 @@ class ProcessImage(object):
         self.thresholdValue = 128
 
         #Hardcoded values in HSV which has nice properties to find the sprouts.
-        self.minHue = 22
+        self.minHue = 27
         self.maxHue = 180
         self.minSaturation = 0
         self.maxSaturation = 255
         self.minValue = 147
         self.maxValue = 255
+
+        # Test with RGB
+        # self.minR = 0
+        # self.minG = 0
+        # self.minB = 0
+        # self.maxR = 255
+        # self.maxG = 255
+        # self.maxB = 255
 
         # Very bad coding... while(1) inside a constructor? Never mind...
         # However used to readjust the HSV range before the program continues...
@@ -55,6 +64,10 @@ class ProcessImage(object):
         self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
         self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
 
+        # This is a test with RGB
+        # self.lower_rgb = np.array([self.minR, self.minG, self.minB], dtype=np.uint8)
+        # self.upper_rgb = np.array([self.maxR, self.maxG, self.maxB], dtype=np.uint8)
+
         # Addin trackbars to adjust the parameters in the HSV segmentation
         self.addTrackbar("Min Hue", "The HSV segmentation with trackbar", self.minHue, 180)
         self.addTrackbar("Max Hue", "The HSV segmentation with trackbar", self.maxHue, 180)
@@ -62,6 +75,13 @@ class ProcessImage(object):
         self.addTrackbar("Max Saturation", "The HSV segmentation with trackbar", self.maxSaturation, 255)
         self.addTrackbar("Min Value", "The HSV segmentation with trackbar", self.minValue, 255)
         self.addTrackbar("Max Value", "The HSV segmentation with trackbar", self.maxValue, 255)
+
+        # self.addTrackbar("Min R", "The RGB segmentation with trackbar", self.minR, 255)
+        # self.addTrackbar("Max R", "The RGB segmentation with trackbar", self.maxR, 255)
+        # self.addTrackbar("Min G", "The RGB segmentation with trackbar", self.minG, 255)
+        # self.addTrackbar("Max G", "The RGB segmentation with trackbar", self.maxG, 255)
+        # self.addTrackbar("Min B", "The RGB segmentation with trackbar", self.minB, 255)
+        # self.addTrackbar("Max B", "The RGB segmentation with trackbar", self.maxB, 255)
 
         while True:
             k = cv2.waitKey(30) & 0xff
@@ -78,19 +98,34 @@ class ProcessImage(object):
             self.minValue = self.trackbarListener("Min Value", "The HSV segmentation with trackbar")
             self.maxValue = self.trackbarListener("Max Value", "The HSV segmentation with trackbar")
 
+            # Listen to the change of the parameters
+            self.minR = self.trackbarListener("Min R", "The RGB segmentation with trackbar")
+            self.maxR = self.trackbarListener("Max R", "The RGB segmentation with trackbar")
+            self.minG = self.trackbarListener("Min G", "The RGB segmentation with trackbar")
+            self.maxG = self.trackbarListener("Max G", "The RGB segmentation with trackbar")
+            self.minB = self.trackbarListener("Min B", "The RGB segmentation with trackbar")
+            self.maxB = self.trackbarListener("Max B", "The RGB segmentation with trackbar")
 
             # Show the result after the HSV
             self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
             self.upper_hsv = np.array([self.maxHue, self.maxSaturation, self.maxValue], dtype=np.uint8)
+
+            # Show the result after the RGB
+            # self.lower_rgb = np.array([self.minR, self.minG, self.minB], dtype=np.uint8)
+            # self.upper_rgb = np.array([self.maxR, self.maxG, self.maxB], dtype=np.uint8)
+
             self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
-            self.showImg("The HSV segmentation with trackbar", self.imgHSV, 0.5)
+            # self.imgRGB = self.getRGB(self.lower_rgb, self.upper_rgb)
+
+            self.showImg("The HSV segmentation with trackbar", self.imgHSV, 1)
+            # self.showImg("The RGB segmentation with trackbar", self.imgRGB, 1)
+            self.showImg("The input image for compaire", self.img, 1)
+
+            # Perhaps here I can do some test with RGB to see that the RGB components is more noicey compaired use HSV. The HSV detects colors
+            # where the red component in RGB can change if there is shaddow or more brightness in he image.
 
         print "Program restarted here..."
         cv2.destroyWindow("PauseScreen")
-
-
-
-
 
         # Some primary image processing
         self.imgGray = self.getGrayImage()
@@ -574,6 +609,11 @@ class ProcessImage(object):
         img_seg = cv2.inRange(img_hsv, lower_hsv, upper_hsv)
         return img_seg
 
+    def getRGB(self, lower_rgb, upper_rgb):
+        img_rgb = self.img
+        img_seg = cv2.inRange(img_rgb, lower_rgb, upper_rgb)
+        return img_seg
+
     def getContours(string, binary_img):
         #Copy the image, to avoid manipulating with original
         contour_img = binary_img.copy()
@@ -721,30 +761,39 @@ class ProcessImage(object):
         return featureLabel
 
 class PlotFigures():
-    def __init__(self, string):
-        self.name = string
-        self.fig = plt.figure(num=self.name, figsize=(10.94, 8.21), dpi=100, facecolor='w', edgecolor='k')
-        plt.title(self.name)
+    def __init__(self, titleName, fileName):
+        self.fileName = fileName
+
+        self.size = 18
+        font = {'size': self.size}
+        matplotlib.rc('xtick', labelsize=self.size)
+        matplotlib.rc('ytick', labelsize=self.size)
+        matplotlib.rc('font', **font)
+
+        # self.fig = plt.figure(num=titleName, figsize=(10.94, 8.21), dpi=200, facecolor='w', edgecolor='k')
+        self.fig = plt.figure(num=titleName, figsize=(10, 8.21), dpi=300, facecolor='w', edgecolor='k')
+        plt.title(titleName)
         self.ax = plt.subplot(111)
 
     def plotData(self, x, y, string_icon, string_label):
-        plt.plot(x, y, string_icon, label=string_label)
+        plt.plot(x, y, string_icon, label=string_label, markersize=self.size/2)
 
         # Shrink current axis by 20%
         box = self.ax.get_position()
         self.ax.set_position([box.x0, box.y0, box.width * 0.95, box.height])
 
         # Put a legend to the right of the current axis
-        self.ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        # self.ax.legend(loc='center left', bbox_to_anchor=(0.8, 1))
+        self.ax.legend(loc='lower right')
 
         #Set grid on, limit the y axis (not the x yet) and put names on axis
         plt.grid(True)
 
     def setXlabel(self, string_x):
-        plt.xlabel(string_x)
+        plt.xlabel(string_x, fontsize=self.size)
 
     def setYlabel(self, string_y):
-        plt.ylabel(string_y)
+        plt.ylabel(string_y, fontsize=self.size)
 
     def limit_y(self, min_y, max_y):
         plt.ylim(min_y, max_y)
@@ -756,11 +805,12 @@ class PlotFigures():
         plt.plot(np.mean(x), np.mean(y), string_icon, markersize=20)
 
     def updateFigure(self):
-        plt.show(block=False)
+        # plt.show(block=False)   # It is very big with 300 dpi
         self.saveFigure()
 
     def saveFigure(self):
-        plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.name) + ".jpg")
+        # plt.annotate('Removed datapoint', xy=(0.33, 0.43), xytext=(0.6, 0.5), arrowprops=dict(facecolor='black', shrink=0.005))
+        plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.fileName) + ".jpg")
 
 class Perceptron():
     def __init__(self):
@@ -838,7 +888,12 @@ class Perceptron():
             if error_count == 0:
                 # print("Now there is no errors in the whole trainingData")
                 self.run_flag = False
-        print("The number of iterations before the Perceptron stops is:", self.true_counter)
+                print("The number of iterations before the Perceptron stops is:", self.true_counter)
+
+            tries = 10000
+            if self.true_counter > tries:
+                print "The Perceptron has run more than", tries, "times... So we abort now"
+                self.run_flag = False
 
     def getClassifier(self, xmin, xmax, step):
         self.wx = pylab.arange(xmin, xmax, step)
@@ -941,24 +996,36 @@ def main():
     # features[8] # classStamp   --> Not really a feature.
     ################################################################################################
 
-    image_show_ratio = 0.7
+    image_show_ratio = 1
 
     # Training data class 1. Define the first testing data set as class 1
+
+    ###################################################
+    # Image which was taken the 4/3-2015 at ImproSeed #
+    ###################################################
+    imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    imgTestingData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
     # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooLong.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # rimgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLangManipulated.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/Parametre4/par4test.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # Training data class -1. Define the secound testing data set as class -1
-    imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed33GodeSpirer.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed33GodeSpirer.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed33GodeSpirerManipulated.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooShort.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/day8_ImageCropped.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
 
     # Testing data class 0.
     # imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed31Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTestingData = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed31Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
 
     # Do the image processing on the training data class 1
@@ -991,7 +1058,7 @@ def main():
         featureLabelY = td1.getFeatureLabel(featureIndexY)
 
         # Draw featurespace - not normalized
-        drawData1 = PlotFigures("Feature space for training data class 1 and class -1")
+        drawData1 = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
         drawData1.plotData(td1.features[featureIndexX], td1.features[featureIndexY], "rs", "Class 1")
         drawData1.plotData(tdNeg1.features[featureIndexX], tdNeg1.features[featureIndexY], "bs", "Class -1")
         # drawData1.plotData(testData.features[featureIndexX], testData.features[featureIndexY], "gs", "Class 0") # Uncomment this just to see the mix data in the feature space
@@ -1031,13 +1098,13 @@ def main():
         class1ListX, class1ListY, classNeg1ListX, classNeg1ListY = p.getIndividualList(total_training_data)
 
         #Run the Perceptron algorithm to learn the classifier something...
-        learning_rate = 0.5
-        # p.startLearn(learning_rate, total_training_data)
-        # p.getClassifier(0, 1, 0.01)
+        learning_rate = 0.10
+        p.startLearn(learning_rate, total_training_data)
+        p.getClassifier(0, 1, 0.01)
 
         # Draw the data with the classifier line and with normalized data
-        drawData2 = PlotFigures("Normalized feature space with classifier seperater - The perceptron")
-        drawData2.plotData(p.wx, p.wy, "b-", "The perceptron line")
+        drawData2 = PlotFigures("Normalized feature space for class 1 and class -1 data \n with Perceptron classifier ", "NormFeatureSpaceClass1andClassNeg1WithPerceptron")
+        drawData2.plotData(p.wx, p.wy, "b-", "The perceptron")
         drawData2.plotData(class1ListX, class1ListY, "rs", "Class 1")
         drawData2.plotData(classNeg1ListX, classNeg1ListY, "bs", "Class -1")
         drawData2.limit_y(0,1)
@@ -1048,9 +1115,12 @@ def main():
         drawData2.updateFigure()
 
         # Draw the data with the classifier line and the normalized testing data
-        drawData3 = PlotFigures("Normalized feature space with testing data and classifier seperater")
-        drawData3.plotData(p.wx, p.wy, "b-", "The perceptron line")
+        drawData3 = PlotFigures("Normalized feature space for testing data \n with Perceptron classifier ", "NormFeatureSpaceClass0WithPerceptron")
+        drawData3.plotData(p.wx, p.wy, "b-", "The perceptron")
         drawData3.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+
+        print "The classZeroListX is:", classZeroListX
+        print "The classZeroListY is:", classZeroListY
 
         # Note: The legend is a little fucked... If there is only two elements, the Perceptron line and the testin data
         # that has not been classified, then the text of Perceptron goes out into the right margin of the image.
@@ -1078,8 +1148,8 @@ def main():
         Finalclass1ListX, Finalclass1ListY, FinalclassNeg1ListX, FinalclassNeg1ListY = p.getIndividualList(classifiedTestingData)
 
         # Draw the data with the classifier line and where the testing data has been classified.
-        drawData4 = PlotFigures("Normalized testing data which has been classified")
-        drawData4.plotData(p.wx, p.wy, "b-", "The perceptron line")
+        drawData4 = PlotFigures("Normalized classified testing data", "NormClassifiedData")
+        drawData4.plotData(p.wx, p.wy, "b-", "The perceptron")
         drawData4.plotData(Finalclass1ListX, Finalclass1ListY, "rs", "Class 1")
         drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class -1")
         drawData4.limit_y(0,1)
@@ -1093,13 +1163,13 @@ def main():
         ###############################################################################
 
         # Training data class 1
-        td1.showImg("Input image class 1 and fitted to display on screen", td1.img, image_show_ratio)
+        td1.showImg("InputClass1", td1.img, image_show_ratio)
 
         # Training data class -1
-        tdNeg1.showImg("Input image class -1 and fitted to display on screen", tdNeg1.img, image_show_ratio)
+        tdNeg1.showImg("InputClassNeg1", tdNeg1.img, image_show_ratio)
 
         # Testing data class 0
-        testData.showImg("Input image class 0 and fitted to display on screen", testData.img, image_show_ratio)
+        testData.showImg("InputClass0", testData.img, image_show_ratio)
 
         # Show the grayscale image
         #td1.showImg("Grayscale image class 1 and fitted to display on  screen", td1.imgGray, image_show_ratio)
@@ -1107,34 +1177,34 @@ def main():
         # testData.showImg("Grayscale image class 0 and fitted to display on  screen", testData.imgGray, image_show_ratio)
 
         # Show the thresholded image. This contains the seeds and the sprouts with a gray level. Background is black
-        td1.showImg("Thresholded image data class 1 and fitted to display on screen", td1.imgThreshold, image_show_ratio)
-        tdNeg1.showImg("Thresholded image data class -1 and fitted to display on screen", tdNeg1.imgThreshold, image_show_ratio)
-        testData.showImg("Thresholded image data class 0 and fitted to display on screen", testData.imgThreshold, image_show_ratio)
+        td1.showImg("ThresholdedClass1", td1.imgThreshold, image_show_ratio)
+        tdNeg1.showImg("ThresholdedClassNeg1", tdNeg1.imgThreshold, image_show_ratio)
+        testData.showImg("ThresholdedClass0", testData.imgThreshold, image_show_ratio)
 
         # Show the contours which is the result of the findContours function from OpenCV
-        td1.showImg("Contours td1", td1.imgContourDrawing, image_show_ratio)
-        tdNeg1.showImg("Contours tdNeg1", tdNeg1.imgContourDrawing, image_show_ratio)
-        testData.showImg("Contours testdata", testData.imgContourDrawing, image_show_ratio)
+        td1.showImg("ContoursTd1", td1.imgContourDrawing, image_show_ratio)
+        tdNeg1.showImg("ContoursTdNeg1", tdNeg1.imgContourDrawing, image_show_ratio)
+        testData.showImg("ContoursTestData", testData.imgContourDrawing, image_show_ratio)
 
         # Show the segmentated sprouts by using HSV
-        td1.showImg("HSV segmented image class 1 and fitted to display on screen", td1.imgHSV, image_show_ratio)
-        tdNeg1.showImg("HSV segmented image class -1 and fitted to display on screen tdNeg1", tdNeg1.imgHSV, image_show_ratio)
-        testData.showImg("HSV segmented image class 0 and fitted to display on screen tdNeg1", testData.imgHSV, image_show_ratio)
+        td1.showImg("HSVclass1", td1.imgHSV, image_show_ratio)
+        tdNeg1.showImg("HSVclassNeg1", tdNeg1.imgHSV, image_show_ratio)
+        testData.showImg("HSVclass0", testData.imgHSV, image_show_ratio)
 
         # Show the morph on the HSV to get nicer sprouts
-        td1.showImg("HSV segmented image morphed class 1 and fitted to display on screen", td1.imgMorph, image_show_ratio)
-        tdNeg1.showImg("HSV segmented image morphed class -1 and fitted to display on screen", tdNeg1.imgMorph, image_show_ratio)
-        testData.showImg("HSV segmented image morphed class 0 and fitted to display on screen", testData.imgMorph, image_show_ratio)
+        td1.showImg("HSVclass1Morph", td1.imgMorph, image_show_ratio)
+        tdNeg1.showImg("HSVclassNeg1Morph", tdNeg1.imgMorph, image_show_ratio)
+        testData.showImg("HSVclass0Morph", testData.imgMorph, image_show_ratio)
 
         # Show the addition of the two images, thresholde and HSV
-        td1.showImg("Added training data class 1 and fitted to display on screen", td1.imgSeedAndSprout, image_show_ratio)
-        tdNeg1.showImg("Added training data class -1 and fitted to display on screen", tdNeg1.imgSeedAndSprout, image_show_ratio)
-        testData.showImg("Added training data class 0 and fitted to display on screen", testData.imgSeedAndSprout, image_show_ratio)
+        td1.showImg("AddedClass1", td1.imgSeedAndSprout, image_show_ratio)
+        tdNeg1.showImg("AddedClassNeg1", tdNeg1.imgSeedAndSprout, image_show_ratio)
+        testData.showImg("AddedClass0", testData.imgSeedAndSprout, image_show_ratio)
 
         # Show the input image with indicated center of mass coordinates of each seed.
-        td1.showImg("Show trainingdata class 1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", td1.imgDrawings, image_show_ratio)
-        tdNeg1.showImg("Show trainingdata class -1 with center of mass, boundingBox of sprouts and data in image and let it be fitted to display on screen", tdNeg1.imgDrawings, image_show_ratio)
-        testData.showImg("Show final classification result in image and let it be fitted to display on screen", testData.imgDrawings, image_show_ratio)
+        td1.showImg("ResultClass1", td1.imgDrawings, image_show_ratio)
+        tdNeg1.showImg("ResultClassNeg1", tdNeg1.imgDrawings, image_show_ratio)
+        testData.showImg("ResultClass0", testData.imgDrawings, image_show_ratio)
 
     else:
         if td1.features:
