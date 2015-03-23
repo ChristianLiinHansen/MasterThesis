@@ -47,6 +47,10 @@ class ProcessImage(object):
         self.minValue = 147
         self.maxValue = 255
 
+        # Name of windows
+        nameOfHSVwindow = "The HSV segmentation with trackbar"
+        nameOfThresholdWindow = "The thresholding with trackbar"
+
         # Test with RGB
         # self.minR = 0
         # self.minG = 0
@@ -57,7 +61,6 @@ class ProcessImage(object):
 
         # Very bad coding... while(1) inside a constructor? Never mind...
         # However used to readjust the HSV range before the program continues...
-        print "Program is on halt here"
         img = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/pauseScreen.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
         #Inside here the ajusting HSV should be made
@@ -69,12 +72,15 @@ class ProcessImage(object):
         # self.upper_rgb = np.array([self.maxR, self.maxG, self.maxB], dtype=np.uint8)
 
         # Addin trackbars to adjust the parameters in the HSV segmentation
-        self.addTrackbar("Min Hue", "The HSV segmentation with trackbar", self.minHue, 180)
-        self.addTrackbar("Max Hue", "The HSV segmentation with trackbar", self.maxHue, 180)
-        self.addTrackbar("Min Saturation", "The HSV segmentation with trackbar", self.minSaturation, 255)
-        self.addTrackbar("Max Saturation", "The HSV segmentation with trackbar", self.maxSaturation, 255)
-        self.addTrackbar("Min Value", "The HSV segmentation with trackbar", self.minValue, 255)
-        self.addTrackbar("Max Value", "The HSV segmentation with trackbar", self.maxValue, 255)
+        self.addTrackbar("Min Hue", nameOfHSVwindow, self.minHue, 180)
+        self.addTrackbar("Max Hue", nameOfHSVwindow, self.maxHue, 180)
+        self.addTrackbar("Min Saturation", nameOfHSVwindow, self.minSaturation, 255)
+        self.addTrackbar("Max Saturation", nameOfHSVwindow, self.maxSaturation, 255)
+        self.addTrackbar("Min Value", nameOfHSVwindow, self.minValue, 255)
+        self.addTrackbar("Max Value", nameOfHSVwindow, self.maxValue, 255)
+
+        # Adding trackbars to adjust the thresholding value in the preprocessing part
+        self.addTrackbar("Threshold", nameOfThresholdWindow, self.thresholdValue, 255)
 
         # self.addTrackbar("Min R", "The RGB segmentation with trackbar", self.minR, 255)
         # self.addTrackbar("Max R", "The RGB segmentation with trackbar", self.maxR, 255)
@@ -91,20 +97,23 @@ class ProcessImage(object):
                 break
 
             # Listen to the change of the parameters
-            self.minHue = self.trackbarListener("Min Hue", "The HSV segmentation with trackbar")
-            self.maxHue = self.trackbarListener("Max Hue", "The HSV segmentation with trackbar")
-            self.minSaturation = self.trackbarListener("Min Saturation", "The HSV segmentation with trackbar")
-            self.maxSaturation = self.trackbarListener("Max Saturation", "The HSV segmentation with trackbar")
-            self.minValue = self.trackbarListener("Min Value", "The HSV segmentation with trackbar")
-            self.maxValue = self.trackbarListener("Max Value", "The HSV segmentation with trackbar")
+            self.minHue = self.trackbarListener("Min Hue", nameOfHSVwindow)
+            self.maxHue = self.trackbarListener("Max Hue", nameOfHSVwindow)
+            self.minSaturation = self.trackbarListener("Min Saturation", nameOfHSVwindow)
+            self.maxSaturation = self.trackbarListener("Max Saturation", nameOfHSVwindow)
+            self.minValue = self.trackbarListener("Min Value", nameOfHSVwindow)
+            self.maxValue = self.trackbarListener("Max Value", nameOfHSVwindow)
+
+            # Listen to the change of the parameter threshold
+            self.thresholdValue = self.trackbarListener("Threshold", nameOfThresholdWindow)
 
             # Listen to the change of the parameters
-            self.minR = self.trackbarListener("Min R", "The RGB segmentation with trackbar")
-            self.maxR = self.trackbarListener("Max R", "The RGB segmentation with trackbar")
-            self.minG = self.trackbarListener("Min G", "The RGB segmentation with trackbar")
-            self.maxG = self.trackbarListener("Max G", "The RGB segmentation with trackbar")
-            self.minB = self.trackbarListener("Min B", "The RGB segmentation with trackbar")
-            self.maxB = self.trackbarListener("Max B", "The RGB segmentation with trackbar")
+            # self.minR = self.trackbarListener("Min R", "The RGB segmentation with trackbar")
+            # self.maxR = self.trackbarListener("Max R", "The RGB segmentation with trackbar")
+            # self.minG = self.trackbarListener("Min G", "The RGB segmentation with trackbar")
+            # self.maxG = self.trackbarListener("Max G", "The RGB segmentation with trackbar")
+            # self.minB = self.trackbarListener("Min B", "The RGB segmentation with trackbar")
+            # self.maxB = self.trackbarListener("Max B", "The RGB segmentation with trackbar")
 
             # Show the result after the HSV
             self.lower_hsv = np.array([self.minHue, self.minSaturation, self.minValue], dtype=np.uint8)
@@ -116,83 +125,43 @@ class ProcessImage(object):
 
             self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
             # self.imgRGB = self.getRGB(self.lower_rgb, self.upper_rgb)
+            self.imgThreshold = self.getThresholdImage()
 
-            self.showImg("The HSV segmentation with trackbar", self.imgHSV, 1)
+            self.showImg(nameOfHSVwindow, self.imgHSV, 1)
+            self.showImg(nameOfThresholdWindow, self.imgThreshold, 1)
+
             # self.showImg("The RGB segmentation with trackbar", self.imgRGB, 1)
             self.showImg("The input image for compaire", self.img, 1)
 
-            # Perhaps here I can do some test with RGB to see that the RGB components is more noicey compaired use HSV. The HSV detects colors
-            # where the red component in RGB can change if there is shaddow or more brightness in he image.
+            # Some primary image processing
+            self.imgMorph = self.getOpening(self.imgHSV, 1, 2)          # Remove any noise pixels with erosion first and then dilate after (Opening)
+            self.imgMorph = self.getOpening(self.imgMorph, 1, 0)        # However erode again after to get same sprouts size again
+
+            # contours
+            self.contoursFromThresholdImg = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
+
+            # The contours taking from imgThreshold contains a lot of noice blobs.
+            # Therefore a simple areafilter is checking
+            self.contoursFromThresholdImgFiltered, listOfAreas = self.getContoursFilter(self.contoursFromThresholdImg, 1000, 9000)
 
         print "Program restarted here..."
         cv2.destroyWindow("PauseScreen")
 
-        # Some primary image processing
-        self.imgGray = self.getGrayImage()
-        self.imgHSV = self.getHSV(self.lower_hsv, self.upper_hsv)
-        self.imgMorph = self.getOpening(self.imgHSV, 1, 2)          # Remove any noise pixels with erosion first and then dilate after (Opening)
-        self.imgMorph = self.getOpening(self.imgMorph, 1, 0)      # However erode again after to get same sprouts size again
-
         #Define the images that we want to work with.
-        self.imgThreshold = self.getThresholdImage(self.thresholdValue)  # Let the background be black and the seeds be gray.
         self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgMorph) # Let the background be black,seeds be gray and sprouts be white
-        # self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgHSV) # Let the background be black,seeds be gray and sprouts be white
-        # self.imgSprouts = self.imgMorph.copy() # Define the sprouts as just the morphed HSV image.
-        # self.imgSeeds = self.subtractImg(self.imgThreshold.copy(), self.imgSprouts) # Define the seeds as the threshold image without the sprouts
 
 
-        # self.showImg("Test imgHSV", self.imgHSV, 0.5)
-        # self.showImg("Test imgMorph", self.imgMorph, 0.5)
-        # self.showImg("Input image", self.img, 0.5)
-        # self.showImg("Thresholded image", self.imgThreshold, 0.5)
-        # self.showImg("Added images", self.imgSeedAndSprout, 0.5)
-        # cv2.waitKey(0)
-
-        # # Trying to do "cut" close seeds loose, by first applying the erosion and then som dilation afterwards
-        # # Hopefully the effect is that small point connections will be removed. Perhaps only do erosion of the thresholded image
-        # tempImg = self.imgThreshold.copy()
-        # imgThresholdMorph = self.getOpening(tempImg, 1, 0)
-        # self.showImg("Morh of threshold", imgThresholdMorph, 0.5)
-        # cv2.waitKey(0)
-
-        # contours
-        self.contoursFromThresholdImg = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
         # self.contoursSeeds = self.getContours(self.imgSeeds)          # Find contours of seeds, to later find the center of mass (COM) of the seeds.
 
         # Get the countour image, which shows the result of the getContours.
         print "Now we draw the contors"
+
         self.imgContourDrawing = self.drawContour(self.imgThreshold, self.contoursFromThresholdImg)
-
-        # img_copy = self.imgThreshold.copy()
-        # mask = np.zeros(img_copy.shape, dtype="uint8")
-        # self.contourDrawing =
-
-        # # # Draw the contours:
-        # img_copy = self.imgThreshold.copy()
-        # mask = np.zeros(img_copy.shape, dtype="uint8")
-        # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-        # cv2.drawContours(mask, self.contoursThreshold, -1, (0,255,0), 2)
-        # self.showImg("Drawing the contours", mask, 0.5)
-
-        # # print "Now to the contoursThreshold"
-        # print "The size of this is:", len(self.contoursThreshold)
-        #
-        # print "One contour looks like this:", self.contoursThreshold[0]
-        # # print "All the contours looks like this:", self.contoursThreshold
-        # print "And now I call the minRectArea", cv2.minAreaRect(self.contoursThreshold[0])
-
-        #Center of mass, COM
-        # self.centerSeeds = self.getCentroid(self.contoursSeeds, 5000) # Find COM of seeds only, and not the whole object with the sprouts. +8000 pixels is approix the area of the smallest whole seed.
-        # For each contour in the contoursThreshold, we run trough all the coordinate and
 
         # In order to draw on the input image, without messing the original, a copy of the input image is made. This is called imgDrawings
         self.imgDrawings = self.img.copy()
 
-        # The contours taking from imgThreshold contains a lot of noice blobs.
-        # Therefore a simple areafilter is checking
-        self.contoursFromThresholdImgFiltered, listOfAreas = self.getContoursFilter(self.contoursFromThresholdImg, 1000, 9000)
-
-        print "The number of contours went from:", len(self.contoursFromThresholdImg), " to reduced size of:", len(self.contoursFromThresholdImgFiltered)
+        # print "The number of contours went from:", len(self.contoursFromThresholdImg), " to reduced size of:", len(self.contoursFromThresholdImgFiltered)
 
         # Now for each contour, find out which pixels belong as a sprout pixel and seed pixel
         if self.contoursFromThresholdImgFiltered:
@@ -474,6 +443,8 @@ class ProcessImage(object):
             # cv2.waitKey(0)
 
             sprout, seed = self.getSproutAndSeedPixels(img, contour)
+            print "The seed is:", seed
+            print "The sprout is:", sprout
 
             # If this contour contains any sprout pixels
             if sprout:
@@ -518,6 +489,7 @@ class ProcessImage(object):
             # Append the seed pixels into a temp_array in order to find the COM
             temp_array = []
             temp_array.append(seed)
+
             center_of_mass = self.getCentroidOfSingleContour(temp_array)
 
             # Compairing the minAreaRect centercoordinate output with the moments center coordinate
@@ -589,15 +561,18 @@ class ProcessImage(object):
         addedImage = cv2.add(image1, image2)
         return addedImage
 
-    def getGrayImage(self):
-        #Do the grayscale converting
-        img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        return img_gray
+    # def getGrayImage(self):
+    #
+    #     img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+    #     return img_gray
 
-    def getThresholdImage(self, maxValue):
+    def getThresholdImage(self):
+        #Do the grayscale converting
+        imgGray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+
         # Do the thresholding of the image.
-        # Somehow we need to return the "ret" together with the image, to be able to show the image...
-        ret, img_threshold = cv2.threshold(self.imgGray, self.thresholdValue, maxValue, cv2.THRESH_BINARY)
+        ret, img_threshold = cv2.threshold(imgGray, self.thresholdValue, 128, cv2.THRESH_BINARY)
+
         return img_threshold
 
     def getEdge(self):
@@ -633,6 +608,8 @@ class ProcessImage(object):
     def getCentroidOfSingleContour(self, contour):
         np_array = np.array(contour)
 
+        print "We get into here"
+        print contour
         #Calculate the moments for each contour in contours
         m = cv2.moments(np_array)
 
