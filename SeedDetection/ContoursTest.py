@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from psutil._common import constant
 import cv2
+
+# How to import af class from a file. This imports te TestClass from the Test.py file. The Test.py file lies in the same folder as this script does.
+from Test import TestClass
 
 def convertFormatForMinRectArea(listOfPixels):
         # print "The list of pixels within the convertFormatForMinRectArea is:", listOfPixels
@@ -45,10 +47,9 @@ def getBoxPoints(rect):
     p4 = (box[3][0], box[3][1])
     return p1, p2, p3, p4
 
-def drawBoundingBox(p1, p2, p3, p4, imgDraw):
+def drawBoundingBox(p1, p2, p3, p4, imgDraw, boundingBoxColor):
         # Draw the oriente bouningbox
         lineWidth = 1
-        boundingBoxColor = (0, 0, 255)
         cv2.line(imgDraw, p1, p2, boundingBoxColor, lineWidth)
         cv2.line(imgDraw, p2, p3, boundingBoxColor, lineWidth)
         cv2.line(imgDraw, p3, p4, boundingBoxColor, lineWidth)
@@ -62,9 +63,15 @@ def rotateImage(image, angle):
 
 def main():
 
+    # By calling the downfollowing, the constructor for the class TestClass in the file Test.py is callled.
+    tc = TestClass()
+    tc.testFunction()
+
     img = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     imgray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     ret,thresh = cv2.threshold(imgray,127,255,0)
+
+    # TestClass()
 
     imgMorph = getClosing(3,thresh, 3, 3)
     imgThreshold = imgMorph.copy()          # Copy the thresholded + morph mage befor findContours, since findContours somehow mess the input image.
@@ -91,12 +98,13 @@ def main():
         rect = cv2.minAreaRect(contour)
         listOfRects.append(rect)
         p1, p2, p3, p4 = getBoxPoints(rect)
-        drawBoundingBox(p1, p2, p3, p4, imgDraw)
+        drawBoundingBox(p1, p2, p3, p4, imgDraw, (0, 0, 255))
 
-    # cv2.imshow("Drawing the boundingboxes", imgDraw)
+    cv2.imshow("Drawing the boundingboxes", imgDraw)
 
     # Now try to crop out a single boundinbox.
-    imgDrawCropped = imgDraw[200:400, 100:300]
+    # Cropping is img[y1:y2, x1:x2]
+    imgDrawCropped = imgDraw[450:600, 450:600]
     cv2.imshow("Show the cropped imgDraw image", imgDrawCropped)
 
     # Find out how much the boundingbox is rotated. The format is as followed [ ( (xCOM,yCOM), (widht, height), angle ) , .... , ]
@@ -110,8 +118,32 @@ def main():
     x = int(round(listOfRects[3][0][0],0))
     y = int(round(listOfRects[3][0][1],0))
 
+    #Debugging...
+    x1, y1, width1, height1 = cv2.boundingRect(contours[3])
+    p1a = (x1, y1)
+    p2a = (x1+width1, y1)
+    p3a = (x1+width1, y1+height1)
+    p4a = (x1, y1+height1)
+    drawBoundingBox(p1a, p2a, p3a, p4a, imgDraw, (255, 0, 0))
+    # Try cropping out the bounding box, and not the oriented one.
+
+    # Cropping is img[y1:y2, x1:x2]
+    imgBBcropped = imgThreshold[y1:y1+height1, x1:x1+width1]
+    cv2.imshow("The croppped boundingbox", imgBBcropped)
+
+    # Now the seed can be examinated.
+
+
+
+
+    print "The x,y,width,height is", x1, y1, width1, height1
+    cv2.circle(imgDraw, (x1, y1), 5, (255, 0, 0), -1)
+
+
+
+
     cv2.circle(imgDraw, (x, y), 5, (255, 0, 0), -1)
-    # cv2.imshow("Drawing a pixel again", imgDraw)
+    cv2.imshow("Drawing a pixel again", imgDraw)
 
     # Now get how much this contour is rotated
     print "The rotation of this contour is:", listOfRects[3][2]
@@ -125,8 +157,8 @@ def main():
     # However this adds the cuputation time, so we just convert it to grayscale in order to rotate the color image onces.
     imgDrawCroppedGray = cv2.cvtColor(imgDrawCropped,cv2.COLOR_BGR2GRAY)
 
-    # So rotating it +90 degree is a 90 degree counterclockwise direction.
-    rotatedImg = rotateImage(imgDrawCroppedGray, -30)
+    # # So rotating it +90 degree is a 90 degree counterclockwise direction.
+    rotatedImg = rotateImage(imgDrawCroppedGray, angleRotated+90)
     cv2.imshow("Show the rotated cropped image", rotatedImg)
 
     cv2.waitKey(0)
