@@ -184,12 +184,19 @@ def main():
 
     # The out for loop prints a several list, where each one has 61 elements.
 
+    # With the offset
     # rowCounter = y1
     # colCounter = x1
 
+    # Here the image is examinated pixel by pixel. The offset compaired to the real image can be adjusted by letting
+    # rowCounter = y1 instead of 0. THe same with cols.
+    # Additioanlly I need to say: Ok, at that pixel coordinate (38,6), which is without the offset, I take that
+    # pixelcoordinate and store it in the sprout list. So at the end of the day, the sprout list contains all the x,y, coordinate for white pixels
+    # in the real image.
+
+    # Without the offset. I.e only looking from the cropped image, and not the real image.
     rowCounter = 0
     colCounter = 0
-
     for row in imgBBcropped:
         for pixel in row:
             if pixel == 255:
