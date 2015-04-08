@@ -6,15 +6,24 @@ Created on 1/4-2015
 @author: Christian Liin Hansen
 """
 
-import numpy as np
 import cv2
 import os
 
 class Input(object):
+
     def __init__(self, cameraIndex):
         self.cameraIndex = cameraIndex
         self.cap = cv2.VideoCapture(cameraIndex)
         self.cameraIsOpen = self.checkCamera()
+
+        # Initialize the training data
+        self.trainingData1 = self.getTrainingDataImages()[0]
+        self.trainingDataNeg1 = self.getTrainingDataImages()[1]
+
+        ##############################################################################################
+        # Debugging!!! Not a stream for webcamera with test data image
+        #############################################################################################
+        self.testingData = self.getTrainingDataImages()[2]
 
         # Set the resolution
         if self.cameraIsOpen:
@@ -26,6 +35,16 @@ class Input(object):
             return True
         else:
             return False
+
+    def getTrainingDataImages(self):
+        imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+        # DEBUGGING!. NOTE: this function is only suppose to read two, or perhaps three training data images. Not a testing image.
+        # This testing image, should come from the webcamera.
+        # However in order to have some testing data, a still image is used, in order to verify the preprocessing, segmentation, classification and output component.
+        imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
 
     def setResolution(self):
         self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1920)
