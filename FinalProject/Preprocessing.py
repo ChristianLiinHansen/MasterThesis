@@ -26,9 +26,6 @@ class Preprocessing(object):
         self.imgSprout = self.getSproutImg(imgInput.copy(), lower_hsv, upper_hsv)
         self.imgSprout = self.getClosing(self.imgSprout, iterations_erode=3, iterations_dilate=3, kernelSize=3)
 
-        # DEBUG:
-        cv2.imshow("The imgSprout image"+str(classStamp), self.imgSprout)
-
         # Add the front ground image and the sprout image in order to get the SeedAndSprout image.
         # This is the SeedAndSprout image
         self.imgSeedAndSprout = self.getSeedAndSproutImg(self.imgFrontGround, self.imgSprout)

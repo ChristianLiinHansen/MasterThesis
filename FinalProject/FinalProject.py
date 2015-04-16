@@ -22,23 +22,28 @@ def main():
     # Initialize the Input component with cameraIndex = 0 (webcamera inbuilt in PC)
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
-    i = Input(0)
+    i = Input(1)
 
     # Initialize the Preprocessing component with the training data1 and -1
     # Input: trainingData1, trainingDataNeg1
     # Output: imgThreshold, imgSeedAndSprout.
     p1 = Preprocessing(i.trainingData1, 1)
     pNeg1 = Preprocessing(i.trainingDataNeg1, -1)
-    cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSprout.png", p1.imgSeedAndSprout)
 
     # Check the output of the processing part
     # cv2.imshow("The imgFrontGround image is:", p1.imgFrontGround)
     # cv2.imshow("The imgSeedAndSprout image is:", p1.imgSeedAndSprout)
+    # cv2.waitKey(0)
+
 
     # Initialize the Segmentation component
-    s1 = Segmentation(i.trainingData1, p1.imgFrontGround, p1.imgSeedAndSprout, 1)
-    sNeg1 = Segmentation(i.trainingDataNeg1, pNeg1.imgFrontGround, pNeg1.imgSeedAndSprout, -1)
-    # cv2.imshow("Show the ROI of s1", s1.imgContours)
+    # DEBUG for the Cluster algorithm: read directly the sproutImage
+    # DEBUGimgSeedAndSprout = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/DEBUGimgSeedAndSprout.png", cv2.CV_LOAD_IMAGE_COLOR)
+    # DEBUGimgSeedAndSprout = cv2.cvtColor(DEBUGimgSeedAndSprout, cv2.COLOR_BGR2GRAY)
+
+    s1 = Segmentation(i.trainingData1, p1.imgFrontGround, p1.imgSeedAndSprout, p1.imgSprout, 1)
+    sNeg1 = Segmentation(i.trainingDataNeg1, pNeg1.imgFrontGround, pNeg1.imgSeedAndSprout, pNeg1.imgSprout, -1)
+    #  cv2.imshow("Show the ROI of s1", s1.imgContours)
     # cv2.imshow("Show the ROI of sNeg1", sNeg1.imgContours)
 
     # Check the output of the segmentation part
@@ -54,6 +59,7 @@ def main():
     # Training data has been loaded, preprocessed, segmented, feature extracted and classified.
     # From here, the testing data is loaded by using the webcam, where each seed will be preprocessed, segmented and classified
     # based on what hwo the line of seperation lies.
+
     while i.cameraIsOpen:
 
         # Input from webcamera - Testing data
@@ -61,7 +67,7 @@ def main():
         # cv2.imshow("Streaming from camera", imgInput)
 
         # Showing the training data in order to exit the program...
-        cv2.imshow("TrainingData1", i.trainingData1)
+        # cv2.imshow("TrainingData1", i.trainingData1)
         cv2.imshow("trainingDataNeg1", i.trainingDataNeg1)
 
         # If the user push "ESC" the program close down.
