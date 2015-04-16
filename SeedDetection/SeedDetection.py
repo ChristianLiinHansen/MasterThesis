@@ -167,17 +167,9 @@ class ProcessImage(object):
             # rect = cv2.minAreaRect(self.contoursFromThresholdImg)
             # obbSeedAndSprout = self.getMinAreaRect(self.contoursFromThresholdImg)
 
-
             # p1, p2, p3, p4 = self.getBoxPoints(obbSeedAndSprout)
             # self.drawSproutBoundingBox(p1, p2, p3, p4)
             # self.showImg("Test the bounding box of the thresholded image", self.imgDrawings)
-
-
-
-
-
-
-
 
             #Print out the areas.
             # print listOfAreas
@@ -198,6 +190,7 @@ class ProcessImage(object):
             self.imgDrawings = self.img.copy()
 
             if self.contoursFromThresholdImgFiltered:
+                print "So the contoursFromThresholdImgFiltered looks like this:", self.contoursFromThresholdImgFiltered
                 self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursFromThresholdImgFiltered, self.classStamp) # The 100 is not testet to fit the smallest sprout
 
                 # Draw the center of mass, on the copy of the input image.
@@ -801,6 +794,7 @@ class ProcessImage(object):
 
         # Convert it to numpy
         list_np = np.array(list, dtype=np.int32)
+        print "Now the list_np looks like this", list_np
         return list_np
 
     def getFeatureLabel(self, featureIndex):
