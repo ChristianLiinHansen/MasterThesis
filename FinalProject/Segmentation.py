@@ -37,11 +37,15 @@ class Segmentation(object):
 
         # Before doing any feature extraction, it is important to run through all the pixels, that is in the ROI
         # and not the edge pixels.
-
-        self.getFeaturesFromEachROI(self.contoursFrontGroundFiltered, imgSeedAndSprout, imgSprout, imgRGB, classStamp)
-
-        # Do some feature extraction
-        # self.features = self.getFeaturesFromContours(imgSeedAndSprout, self.contoursFrontGroundFiltered, self.classStamp)
+        self.centerOfMassList, \
+        self.hueMeanList, \
+        self.hueStdList, \
+        self.numberOfSproutPixelsList, \
+        self.lengthList, \
+        self.widthList, \
+        self.ratioList, \
+        self.classStampList \
+            = self.getFeaturesFromEachROI(self.contoursFrontGroundFiltered, imgSeedAndSprout, imgSprout, imgRGB, classStamp)
 
     def saveImg(self, nameOfImg, img):
         cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(nameOfImg) + ".png", img)
@@ -276,8 +280,18 @@ class Segmentation(object):
         return center
 
     def getFeaturesFromEachROI(self, contours, imgSeedAndSprout, imgSprout, imgRGB, classStamp):
-        # Run through all the contours
 
+        # Define the list of values for all the contours for each element.
+        centerOfMassList = []
+        hueMeanList = []
+        hueStdList = []
+        numberOfSproutPixelsList = []
+        lengthList = []
+        widthList = []
+        ratioList = []
+        classStampList = []
+
+        # Run through all the contours
         print "This is class ", classStamp
         #Debugging! Remove a lot of the white pixels, for better check if the cluster algoritm works...
         # DEBUGimgSeedAndSprout = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSproutDEBUG.png", cv2.CV_LOAD_IMAGE_COLOR)
@@ -294,8 +308,10 @@ class Segmentation(object):
 
             # Get the center of mass for each contour from the imgFrontGround
             contourCOM = self.getCentroidOfSingleContour(contour)
-            # Draw the center of mass on the RGB image, to verify that the contourCOM is correct
+            # Swop the x,y in order to have correct center of mass
             contourCOMSwopped = (contourCOM[1], contourCOM[0])
+
+            # Draw the center of mass on the RGB image, to verify that the contourCOM is correct
             # cv2.circle(imgRGB, contourCOMSwopped, 3, (0,255,0), -1)
 
             # Debugging: Drawing the boundingBox for each contour.
@@ -351,7 +367,7 @@ class Segmentation(object):
                 # cv2.waitKey(0)
 
                 if len(blobs) != 1:
-                    print "Hey this contour has more blobs than 1, so we run the K-means algorithm in order to split up"
+                    # print "Hey this contour has more blobs than 1, so we run the K-means algorithm in order to split up"
                     # Run the K-means algorithm and clustering the list of sprout pixels into K clusters.
                     # cluster1List, cluster2List = self.runKmediansAlgorithm(sprout=sprout)
                     cluster1List, cluster2List = self.runKmeansAlgorithm(sprout=sprout)
@@ -364,7 +380,8 @@ class Segmentation(object):
                     sprout = self.getLongestList(cluster1List, cluster2List)
 
                 else:
-                    print "Hey this contour has only one blob right? = ", len(blobs), "so we skip the K-means and just load in the list of sprouts directly"
+                    pass
+                    # print "Hey this contour has only one blob right? = ", len(blobs), "so we skip the K-means and just load in the list of sprouts directly"
 
                 # Then convert it, in order to let it be used with the minAreaRect function
                 sproutConvertedFormat = self.convertFormatForMinRectArea(sprout)
@@ -397,25 +414,45 @@ class Segmentation(object):
                 # Get the hue mean, hue_std
                 # print "\n Now we call the analyseSprout with this sprout list:", sprout
                 hue_mean, hue_std, numberOfSproutPixels = self.analyseSprouts(imgRGB, sprout)
-                print "So for this contour, the hue_mean, hue_std and numberOfSproutPixels is:", hue_mean, hue_std, numberOfSproutPixels
+
+                # print "So for this contour, the hue_mean, hue_std and numberOfSproutPixels is:", hue_mean, hue_std, numberOfSproutPixels
 
 
                 # Here we have to store the length, and width. Thease are the features from the sprout bounding box.
 
                 # DEBUG: Uncomment for plotting each boundingbox individually.
                 # cv2.drawContours(mask, contours, -1, contourColor, lineWidth)
-                cv2.imshow("imgContours"+str(classStamp), imgDraw)
-                cv2.imshow("RGB input image", imgRGB)
-                cv2.waitKey(0)
+                # cv2.imshow("imgContours"+str(classStamp), imgDraw)
+                # cv2.imshow("RGB input image", imgRGB)
+                # cv2.waitKey(0)
             else:
-                print "Hey this contour contained no sprout pixels from classstamp", classStamp
+                length = 0
+                width = 0
+                ratio = 0
+                hue_mean = 0
+                hue_std = 0
+                numberOfSproutPixels = 0
+
+                # print "Hey this contour contained no sprout pixels from classstamp", classStamp
+
+            # Append the values to each list
+            centerOfMassList.append(contourCOMSwopped)
+            hueMeanList.append(hue_mean)
+            hueStdList.append(hue_std)
+            numberOfSproutPixelsList.append(numberOfSproutPixels)
+            lengthList.append(length)
+            widthList.append(width)
+            ratioList.append(ratio)
+            classStampList.append(classStamp)
 
         # Show result at the end of all contours has been ran through...
-        cv2.imshow("imgContours"+str(classStamp), imgDraw)
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgRGB"+str(classStamp)+".png", self.imgRGB)
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSprout"+str(classStamp)+".png", imgSeedAndSprout)
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgContours"+str(classStamp)+".png", imgDraw)
-        cv2.waitKey(0)
+        # cv2.imshow("imgContours"+str(classStamp), imgDraw)
+        # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgRGB"+str(classStamp)+".png", self.imgRGB)
+        # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSprout"+str(classStamp)+".png", imgSeedAndSprout)
+        # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgContours"+str(classStamp)+".png", imgDraw)
+        # cv2.waitKey(0)
+
+        return centerOfMassList, hueMeanList, hueStdList, numberOfSproutPixelsList, lengthList, widthList, ratioList, classStampList
 
     def getBoxPoints(self, rect):
         # http://stackoverflow.com/questions/18207181/opencv-python-draw-minarearect-rotatedrect-not-implemented
