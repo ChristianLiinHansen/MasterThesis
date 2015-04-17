@@ -21,14 +21,20 @@ class Classification(object):
                  featureNumberOfSproutPixelsListClassNeg1,
                  featureClassStampListClassNeg1):
 
-        # Load the training data from class1 and class -1
-        pf = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
-        pf.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
-        pf.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
-        pf.setXlabel("Length of sprout bounding box")
-        pf.setYlabel("Number of sprout pixels in bounding box")
-        # pf.updateFigure()
+        self.maxX = 50
+        self.maxY = 255
 
+        # Load the training data from class1 and class -1
+        featureplot = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
+        featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
+        featureplot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
+        featureplot.setXlabel("Length of sprout bounding box")
+        featureplot.setYlabel("Number of sprout pixels in bounding box")
+        featureplot.limit_x(0,self.maxX)
+        featureplot.limit_y(0,self.maxY)
+        featureplot.updateFigure()
+
+        # Convert the data into a format that is suitable for the SVM
         class1X, class1y = self.convertDataToSVMFormat(featureLengthListClass1,
                                                        featureNumberOfSproutPixelsListClass1,
                                                        featureClassStampListClass1)
@@ -36,68 +42,59 @@ class Classification(object):
                                                featureNumberOfSproutPixelsListClassNeg1,
                                                featureClassStampListClassNeg1)
 
-        X,y = self.stackData(class1X, classNeg1X, class1y, classNeg1y)
+        X, y = self.stackData(class1X, classNeg1X, class1y, classNeg1y)
 
-        # And the X and Y crooped is:
-        # print "X cropped to:", X[0:2]
-
+        # SVM regularization parameter
         C = 1.0
+        xx, yy, Z = self.runSVM(X, y, C)
+
+        svmPlot = PlotFigures("SVM classification with training using a linear kernel", "SVMlinearKernel")
+        svmPlot.plotContourf(xx, yy, Z)
+
+        # Plot also the training points
+        svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
+        svmPlot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
+        svmPlot.setXlabel("Length of sprout bounding box")
+        svmPlot.setYlabel("Number of sprout pixels in bounding box")
+        svmPlot.limit_x(0,self.maxX)
+        svmPlot.limit_y(0,self.maxY)
+        svmPlot.updateFigure()
+
+        print "Are we there yet?"
+
+    def runSVM(self, X, y, C):
+
+        print "Initializing the SVM..."
         svc = svm.SVC(kernel='linear', C=C).fit(X, y)
-        # rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
-        # poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
-        # lin_svc = svm.LinearSVC(C=C).fit(X, y)
+        # svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
+        # svc = svm.SVC(kernel='poly', degree=2, C=C).fit(X, y)
+        # svc = svm.LinearSVC(C=C).fit(X, y)
+
+        # Starting the SVM...
+        print "Starting the SVM..."
 
         # Create a mesh to plot in
         # Step size in the mesh
         h = .02
         x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
         y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-        xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+        # xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+        xx, yy = np.meshgrid(np.arange(0, self.maxX, h), np.arange(0, self.maxY, h))
 
-        # # Title for the plots
-        titles = ['SVC with linear kernel',
-          'LinearSVC (linear kernel)',
-          'SVC with RBF kernel',
-          'SVC with polynomial (degree 3) kernel']
-
-        plt.subplot(1, 1, 1)
-        plt.subplots_adjust(wspace=0.0, hspace=0.0)
-
-        # Starting the SVM...
-        print "Starting the SVM..."
         Z = svc.predict(np.c_[xx.ravel(), yy.ravel()])
+
         # Put the result into a color plot
         Z = Z.reshape(xx.shape)
-        plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
-        # Plot also the training points
-        plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
-        plt.title(titles[0])
-        plt.show()
+        return xx, yy, Z
 
-        # for i, clf in enumerate((svc, lin_svc, rbf_svc, poly_svc)):
-        #     # Plot the decision boundary. For that, we will assign a color to each
-        #     # point in the mesh [x_min, m_max]x[y_min, y_max].
-        #     plt.subplot(2, 2, i + 1)
-        #     plt.subplots_adjust(wspace=0.4, hspace=0.4)
-        #
-        #     Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
-        #
-        #     # Put the result into a color plot
-        #     Z = Z.reshape(xx.shape)
-        #     plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
-        #
-        #     # Plot also the training points
-        #     plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Paired)
-        #     plt.xlabel('Sepal length')
-        #     plt.ylabel('Sepal width')
-        #     plt.xlim(xx.min(), xx.max())
-        #     plt.ylim(yy.min(), yy.max())
-        #     plt.xticks(())
-        #     plt.yticks(())
-        #     plt.title(titles[i])
-        # plt.show()
-
-        print "Are we there yet?"
+    def plotMesh(self, X):
+        # Create a mesh to plot in
+        # Step size in the mesh
+        h = .02
+        x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+        y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+        xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+        return xx, yy
 
     def convertDataToSVMFormat(self, feature1, feature2, classStamp):
         a = np.array(feature1)

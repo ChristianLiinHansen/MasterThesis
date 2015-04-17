@@ -24,6 +24,9 @@ class PlotFigures(object):
         plt.title(titleName)
         self.ax = plt.subplot(111)
 
+    def plotContourf(self, xx, yy, Z):
+        plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
+
     def plotData(self, x, y, string_icon, string_label):
         plt.plot(x, y, string_icon, label=string_label, markersize=self.size/2)
 
@@ -54,9 +57,9 @@ class PlotFigures(object):
         plt.plot(np.mean(x), np.mean(y), string_icon, markersize=20)
 
     def updateFigure(self):
-        plt.show(block=True)   # It is very big with 300 dpi
+        plt.show(block=False)   # It is very big with 300 dpi
         self.saveFigure()
 
     def saveFigure(self):
         # plt.annotate('Removed datapoint', xy=(0.33, 0.43), xytext=(0.6, 0.5), arrowprops=dict(facecolor='black', shrink=0.005))
-        plt.savefig("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(self.fileName) + ".jpg")
+        plt.savefig("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(self.fileName) + ".png")
