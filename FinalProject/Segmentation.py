@@ -37,14 +37,14 @@ class Segmentation(object):
 
         # Before doing any feature extraction, it is important to run through all the pixels, that is in the ROI
         # and not the edge pixels.
-        self.centerOfMassList, \
-        self.hueMeanList, \
-        self.hueStdList, \
-        self.numberOfSproutPixelsList, \
-        self.lengthList, \
-        self.widthList, \
-        self.ratioList, \
-        self.classStampList \
+        self.featureCenterOfMassList, \
+        self.featureHueMeanList, \
+        self.featureHueStdList, \
+        self.featureNumberOfSproutPixelsList, \
+        self.featureLengthList, \
+        self.featureWidthList, \
+        self.featureRatioList, \
+        self.featureClassStampList \
             = self.getFeaturesFromEachROI(self.contoursFrontGroundFiltered, imgSeedAndSprout, imgSprout, imgRGB, classStamp)
 
     def saveImg(self, nameOfImg, img):
