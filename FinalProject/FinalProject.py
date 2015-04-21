@@ -30,6 +30,7 @@ def main():
     p1 = Preprocessing(i.trainingData1, 1)
     pNeg1 = Preprocessing(i.trainingDataNeg1, -1)
 
+    # Initializing the Segmentation component
     s1 = Segmentation(i.trainingData1, p1.imgFrontGround, p1.imgSeedAndSprout, p1.imgSprout, 1)
     sNeg1 = Segmentation(i.trainingDataNeg1, pNeg1.imgFrontGround, pNeg1.imgSeedAndSprout, pNeg1.imgSprout, -1)
 
@@ -47,7 +48,7 @@ def main():
     # At this point, the whole system has been taught with supervised learning.
     # Training data has been loaded, preprocessed, segmented, feature extracted and classified.
     # From here, the testing data is loaded by using the webcam, where each seed will be preprocessed, segmented and classified
-    # based on what hwo the line of seperation lies.
+    # based on what how the line of seperation lies.
 
     while i.cameraIsOpen:
 
@@ -55,9 +56,32 @@ def main():
         # imgInput = i.getImg()
         # cv2.imshow("Streaming from camera", imgInput)
 
+        # As a beginning, the testing data is for now, just a still image, with a mix of diffrent seeds
+        # Later the imgInput should come from the camera as written above.
+        imgInput = i.testingData
+        cv2.imshow("Testing data", imgInput)
+
+        # The input image is processed through each component as followed, with class 0, since it is unknow which class the
+        # test image belogns to...
+        p = Preprocessing(imgInput, 0)
+
+        # The output of the preproceesing step for the test image is as followed:
+        # cv2.imshow("Test image imgSeedAndSprout though preprocessing step", p.imgSeedAndSprout)
+        # cv2.imshow("Test image imgFrontGround though preprocessing step", p.imgFrontGround)
+        # cv2.imshow("Test image imgSprout though preprocessing step", p.imgSprout)
+
+        # The FrontGround image and SeedAndSprout image is used in the segmentation component
+        s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
+        cv2.imshow("Show the segmentated image", s.imgDraw)
+
+        # print "So a feature is like this:", s.featureLengthList
+
+
+
         # Showing the training data in order to exit the program...
         # cv2.imshow("TrainingData1", i.trainingData1)
-        cv2.imshow("trainingDataNeg1", i.trainingDataNeg1)
+        # cv2.imshow("trainingDataNeg1", i.trainingDataNeg1)
+
 
         # If the user push "ESC" the program close down.
         k = cv2.waitKey(30) & 0xff

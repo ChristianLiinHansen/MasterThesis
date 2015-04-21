@@ -47,25 +47,16 @@ class Classification(object):
         # SVM regularization parameter
         C = 1.0
         # Step size in the mesh
-        h = 0.1
-        xx, yy, Z = self.runSVM(X, y, C, h)
-
-        # print "The shape of Z is:", Z.shape
-        # print "This is Z", Z
-        # print "And now the flipUD Z is:", np.flipud(Z)
+        self.h = 0.1
+        xx, yy, self.Z = self.runSVM(X, y, C, self.h)
 
         svmPlot = PlotFigures("SVM classification with training using a linear kernel", "SVMlinearKernel")
-        svmPlot.plotContourf(xx, yy, Z)
-
-        # print "So xx is:", xx
-        # print "So yy is:", yy
-        # print "The length of xx is:", len(xx)
-        # print "The length of yy is:", len(yy)
-        # print "The length of Z is:", len(Z)
+        svmPlot.plotContourf(xx, yy, self.Z)
 
         # Use the classifier to check if an input
-        testData = (20, 35)
-        print "With a testData point of", testData, "the class is:", self.doClassification(Z, testData, h)
+        testData = (20, 45)
+
+        print "With a testData point of", testData, "the class is:", self.doClassification(self.Z, testData, self.h)
 
         # Plot the testData point
         svmPlot.plotData(testData[0], testData[1], "gs", "testdata")
@@ -129,6 +120,3 @@ class Classification(object):
         X = np.vstack((class1X,classNeg1X))
         y = np.hstack((class1y,classNeg1y))
         return X, y
-
-    def functionFromClassification(self):
-        print "Now the functionFromClassification is called"

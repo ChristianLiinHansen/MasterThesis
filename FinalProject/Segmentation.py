@@ -16,6 +16,9 @@ class Segmentation(object):
         # Debug: Get the RGB input image over in this class to draw contours on the real image etc.
         self.imgRGB = imgRGB
 
+        # Placeholder for the RGB where contours are drawn on
+        self.imgDraw = []
+
         # if classStamp == -1:
         #     cv2.imshow("So checking inputs again for imgRGB", imgRGB)
         #     cv2.imshow("So checking inputs again for imgFrontGround", imgFrontGround)
@@ -292,19 +295,19 @@ class Segmentation(object):
         classStampList = []
 
         # Run through all the contours
-        print "This is class ", classStamp
+        # print "This is class ", classStamp
         #Debugging! Remove a lot of the white pixels, for better check if the cluster algoritm works...
         # DEBUGimgSeedAndSprout = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSproutDEBUG.png", cv2.CV_LOAD_IMAGE_COLOR)
         # DEBUGimgSeedAndSprout = cv2.cvtColor(DEBUGimgSeedAndSprout, cv2.COLOR_BGR2GRAY)
-        imgDraw = imgSeedAndSprout.copy()
-        imgDraw = cv2.cvtColor(imgDraw, cv2.COLOR_GRAY2BGR)
+        self.imgDraw = self.imgRGB.copy()
+        # imgDraw = cv2.cvtColor(imgDraw, cv2.COLOR_GRAY2BGR)
 
         for contour in contours:
             x, y, width, height = cv2.boundingRect(contour)
-            p1 = (x, y)
-            p2 = (x+width, y)
-            p3 = (x+width, y+height)
-            p4 = (x, y+height)
+            # p1 = (x, y)
+            # p2 = (x+width, y)
+            # p3 = (x+width, y+height)
+            # p4 = (x, y+height)
 
             # Get the center of mass for each contour from the imgFrontGround
             contourCOM = self.getCentroidOfSingleContour(contour)
@@ -322,7 +325,7 @@ class Segmentation(object):
             # Crop out each boundingbox
             imgBBcropped = imgSeedAndSprout[y:y+height, x:x+width]
             imgBBcroppedSprout = imgSprout[y:y+height, x:x+width]
-            imgBBcroppedRGB = imgRGB[y:y+height, x:x+width]
+            # imgBBcroppedRGB = imgRGB[y:y+height, x:x+width]
 
             # cv2.imshow("Show the imgBBcropped", imgBBcropped)
             # cv2.imshow("Show the imgBBcropped sprout only", imgBBcroppedSprout)
@@ -392,9 +395,9 @@ class Segmentation(object):
                 # Debug: Convert the imgSeedAndSproutImage to an color image, in order to draw color on it
                 p1, p2, p3, p4 = self.getBoxPoints(obbSprout)
                 # Draw on the imgSeedAndSprout image
-                self.drawBoundingBox(p1, p2, p3, p4, imgDraw, (0, 0, 255), 2)
+                self.drawBoundingBox(p1, p2, p3, p4, self.imgDraw, (0, 0, 255), 2)
                 # Draw on the RGB input image
-                self.drawBoundingBox(p1, p2, p3, p4, imgRGB, (0, 0, 255), 2)
+                # self.drawBoundingBox(p1, p2, p3, p4, imgRGB, (0, 0, 255), 1)
 
                 # cv2.imshow("So the imgdraw is:", imgDraw)
                 # cv2.waitKey(0)
