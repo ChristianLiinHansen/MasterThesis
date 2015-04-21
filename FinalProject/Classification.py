@@ -46,23 +46,46 @@ class Classification(object):
 
         # SVM regularization parameter
         C = 1.0
-        xx, yy, Z = self.runSVM(X, y, C)
+        # Step size in the mesh
+        h = 0.1
+        xx, yy, Z = self.runSVM(X, y, C, h)
+
+        # print "The shape of Z is:", Z.shape
+        # print "This is Z", Z
+        # print "And now the flipUD Z is:", np.flipud(Z)
 
         svmPlot = PlotFigures("SVM classification with training using a linear kernel", "SVMlinearKernel")
         svmPlot.plotContourf(xx, yy, Z)
+
+        # print "So xx is:", xx
+        # print "So yy is:", yy
+        # print "The length of xx is:", len(xx)
+        # print "The length of yy is:", len(yy)
+        # print "The length of Z is:", len(Z)
+
+        # Use the classifier to check if an input
+        testData = (20, 35)
+        print "With a testData point of", testData, "the class is:", self.doClassification(Z, testData, h)
+
+        # Plot the testData point
+        svmPlot.plotData(testData[0], testData[1], "gs", "testdata")
 
         # Plot also the training points
         svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
         svmPlot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
         svmPlot.setXlabel("Length of sprout bounding box")
         svmPlot.setYlabel("Number of sprout pixels in bounding box")
-        svmPlot.limit_x(0,self.maxX)
-        svmPlot.limit_y(0,self.maxY)
+        svmPlot.limit_x(0, self.maxX)
+        svmPlot.limit_y(0, self.maxY)
         svmPlot.updateFigure()
 
         print "Are we there yet?"
 
-    def runSVM(self, X, y, C):
+    def doClassification(self, Z, testData, h):
+        # Instead of swopping x and y, we just look up in a y,x fashion
+        return Z[testData[1]/h, testData[0]/h]
+
+    def runSVM(self, X, y, C, h):
 
         print "Initializing the SVM..."
         svc = svm.SVC(kernel='linear', C=C).fit(X, y)
@@ -74,8 +97,6 @@ class Classification(object):
         print "Starting the SVM..."
 
         # Create a mesh to plot in
-        # Step size in the mesh
-        h = .02
         x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
         y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
         # xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))

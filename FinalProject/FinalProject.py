@@ -22,7 +22,7 @@ def main():
     # Initialize the Input component with cameraIndex = 0 (webcamera inbuilt in PC)
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
-    i = Input(0)
+    i = Input(1)
 
     # Initialize the Preprocessing component with the training data1 and -1
     # Input: trainingData1, trainingDataNeg1
