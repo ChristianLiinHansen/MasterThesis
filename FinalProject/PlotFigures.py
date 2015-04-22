@@ -9,6 +9,7 @@ Created on 17/4-2015
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 class PlotFigures(object):
     def __init__(self, titleName, fileName):
@@ -21,7 +22,7 @@ class PlotFigures(object):
 
         # self.fig = plt.figure(num=titleName, figsize=(10, 8.21), dpi=300, facecolor='w', edgecolor='k')
         self.fig = plt.figure(num=titleName, figsize=(10, 8.21), dpi=100, facecolor='w', edgecolor='k')
-        plt.title(titleName)
+        self.setTitle(titleName)
         self.ax = plt.subplot(111)
 
     def plotContourf(self, xx, yy, Z):
@@ -36,10 +37,16 @@ class PlotFigures(object):
 
         # Put a legend to the right of the current axis
         # self.ax.legend(loc='center left', bbox_to_anchor=(0.8, 1))
-        self.ax.legend(loc='lower right')
+        # self.ax.legend(loc='lower right')
 
         #Set grid on, limit the y axis (not the x yet) and put names on axis
         plt.grid(True)
+
+    def addLegend(self):
+        plt.legend(loc= "lower right")
+
+    def setTitle(self, titleName):
+        plt.title(titleName)
 
     def setXlabel(self, string_x):
         plt.xlabel(string_x, fontsize=self.size)
@@ -59,6 +66,9 @@ class PlotFigures(object):
     def updateFigure(self):
         plt.show(block=False)   # It is very big with 300 dpi
         self.saveFigure()
+
+    def clearFigure(self):
+        plt.clf()
 
     def saveFigure(self):
         # plt.annotate('Removed datapoint', xy=(0.33, 0.43), xytext=(0.6, 0.5), arrowprops=dict(facecolor='black', shrink=0.005))

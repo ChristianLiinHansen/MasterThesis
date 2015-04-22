@@ -3,12 +3,15 @@
 
 # Import classes from component files
 import cv2
-
+import time
 from Input import Input
 from Preprocessing import Preprocessing
 from Segmentation import Segmentation
 from Classification import Classification
 from Output import Output
+from PlotFigures import PlotFigures
+from pylab import *
+
 
 def main():
 
@@ -50,14 +53,34 @@ def main():
     # From here, the testing data is loaded by using the webcam, where each seed will be preprocessed, segmented and classified
     # based on what how the line of seperation lies.
 
+    print "Testing..."
+    ion()
+    fig1 = figure()
+    ax1 = fig1.add_subplot(111)
+    x = arange(0,2*pi,0.01)
+    y = sin(x)
+    line1, = ax1.plot(x, y, 'gs')
+    plt.ioff()
+    iteration = 0
+
+    # for iteration in arange(1, 200):
+    #     line1.set_ydata(sin(x+iteration/10.0))  # update the data
+    #     draw()
+
+    featureplot = PlotFigures("Feature space for testing data class 0", "FeatureSpaceClass0")
+
     while i.cameraIsOpen:
+
+        iteration = iteration + 1
+        line1.set_ydata(sin(x+iteration/10.0))  # update the data
+        draw()
 
         # Input from webcamera - Testing data
         # imgInput = i.getImg()
         # cv2.imshow("Streaming from camera", imgInput)
 
-        # As a beginning, the testing data is for now, just a still image, with a mix of diffrent seeds
-        # Later the imgInput should come from the camera as written above.
+        # # As a beginning, the testing data is for now, just a still image, with a mix of diffrent seeds
+        # # Later the imgInput should come from the camera as written above.
         imgInput = i.testingData
         cv2.imshow("Testing data", imgInput)
 
@@ -72,11 +95,23 @@ def main():
 
         # The FrontGround image and SeedAndSprout image is used in the segmentation component
         s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
-        cv2.imshow("Show the segmentated image", s.imgDraw)
+        cv2.imshow("Show the RGB image with contours of sprouts", s.imgDraw)
 
-        # print "So a feature is like this:", s.featureLengthList
+        # Plot the featureplot for the testing data, e.i class 0
+        featureplot.clearFigure()
+        featureplot.plotData(s.featureLengthList, s.featureNumberOfSproutPixelsList, "gs", "class 0")
+        featureplot.limit_x(0, c.maxX)
+        featureplot.limit_y(0, c.maxY)
+        featureplot.setTitle("Featureplot for class 0")
+        featureplot.addLegend()
+        featureplot.setXlabel(c.Xlabel)
+        featureplot.setYlabel(c.Ylabel)
+        featureplot.updateFigure()
 
-
+        # featureplot.plotData(s.featureLengthList, s.featureNumberOwfSproutPixelsList, "gs", "class 0")
+        # iteration = iteration + 1
+        # line1.set_ydata(sin(x+iteration/10.0))  # update the data
+        # draw()
 
         # Showing the training data in order to exit the program...
         # cv2.imshow("TrainingData1", i.trainingData1)

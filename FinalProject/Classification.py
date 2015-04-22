@@ -28,10 +28,15 @@ class Classification(object):
         featureplot = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
         featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
         featureplot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
-        featureplot.setXlabel("Length of sprout bounding box")
-        featureplot.setYlabel("Number of sprout pixels in bounding box")
-        featureplot.limit_x(0,self.maxX)
-        featureplot.limit_y(0,self.maxY)
+
+        self.Xlabel = "Length of sprout bounding box"
+        self.Ylabel = "Number of sprout pixels in bounding box"
+
+        featureplot.setXlabel(self.Xlabel)
+        featureplot.setYlabel(self.Ylabel)
+        featureplot.limit_x(0, self.maxX)
+        featureplot.limit_y(0, self.maxY)
+        featureplot.addLegend()
         featureplot.updateFigure()
 
         # Convert the data into a format that is suitable for the SVM
@@ -68,6 +73,7 @@ class Classification(object):
         svmPlot.setYlabel("Number of sprout pixels in bounding box")
         svmPlot.limit_x(0, self.maxX)
         svmPlot.limit_y(0, self.maxY)
+        svmPlot.addLegend()
         svmPlot.updateFigure()
 
         print "Are we there yet?"
