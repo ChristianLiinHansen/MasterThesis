@@ -53,27 +53,7 @@ def main():
     # From here, the testing data is loaded by using the webcam, where each seed will be preprocessed, segmented and classified
     # based on what how the line of seperation lies.
 
-    print "Testing..."
-    ion()
-    fig1 = figure()
-    ax1 = fig1.add_subplot(111)
-    x = arange(0,2*pi,0.01)
-    y = sin(x)
-    line1, = ax1.plot(x, y, 'gs')
-    plt.ioff()
-    iteration = 0
-
-    # for iteration in arange(1, 200):
-    #     line1.set_ydata(sin(x+iteration/10.0))  # update the data
-    #     draw()
-
-    featureplot = PlotFigures("Feature space for testing data class 0", "FeatureSpaceClass0")
-
     while i.cameraIsOpen:
-
-        iteration = iteration + 1
-        line1.set_ydata(sin(x+iteration/10.0))  # update the data
-        draw()
 
         # Input from webcamera - Testing data
         # imgInput = i.getImg()
@@ -82,41 +62,65 @@ def main():
         # # As a beginning, the testing data is for now, just a still image, with a mix of diffrent seeds
         # # Later the imgInput should come from the camera as written above.
         imgInput = i.testingData
-        cv2.imshow("Testing data", imgInput)
 
         # The input image is processed through each component as followed, with class 0, since it is unknow which class the
         # test image belogns to...
         p = Preprocessing(imgInput, 0)
-
-        # The output of the preproceesing step for the test image is as followed:
-        # cv2.imshow("Test image imgSeedAndSprout though preprocessing step", p.imgSeedAndSprout)
-        # cv2.imshow("Test image imgFrontGround though preprocessing step", p.imgFrontGround)
-        # cv2.imshow("Test image imgSprout though preprocessing step", p.imgSprout)
 
         # The FrontGround image and SeedAndSprout image is used in the segmentation component
         s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
         cv2.imshow("Show the RGB image with contours of sprouts", s.imgDraw)
 
         # Plot the featureplot for the testing data, e.i class 0
-        featureplot.clearFigure()
-        featureplot.plotData(s.featureLengthList, s.featureNumberOfSproutPixelsList, "gs", "class 0")
-        featureplot.limit_x(0, c.maxX)
-        featureplot.limit_y(0, c.maxY)
-        featureplot.setTitle("Featureplot for class 0")
-        featureplot.addLegend()
-        featureplot.setXlabel(c.Xlabel)
-        featureplot.setYlabel(c.Ylabel)
-        featureplot.updateFigure()
+        featureplotClass0 = PlotFigures(3)
+        featureplotClass0.clearFigure()
+        featureplotClass0.plotData(s.featureLengthList, s.featureNumberOfSproutPixelsList, "gs", "class 0")
+        featureplotClass0.limit_x(0, c.maxX)
+        featureplotClass0.limit_y(0, c.maxY)
+        featureplotClass0.setTitle("Feature plot for testing data class 0")
+        featureplotClass0.addLegend()
+        featureplotClass0.setXlabel(c.Xlabel)
+        featureplotClass0.setYlabel(c.Ylabel)
+        featureplotClass0.updateFigure()
 
-        # featureplot.plotData(s.featureLengthList, s.featureNumberOwfSproutPixelsList, "gs", "class 0")
-        # iteration = iteration + 1
-        # line1.set_ydata(sin(x+iteration/10.0))  # update the data
-        # draw()
+        # Now with the featureplot of class0, we need to draw the featureplot where the class0 is going to get classified.
+        # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.
+        featureplotClass0Classified = PlotFigures(4)
+        featureplotClass0Classified.clearFigure()
+
+        # print "What do we have?..."
+        # print "The x feature list is:", s.featureLengthList
+        # print "The y feature list is:", s.featureNumberOfSproutPixelsList
+        # We combine the x,y feature list into a single list with (x,y) points.
+        featureClass1ListX, \
+        featureClass1ListY, \
+        featureClassNeg1ListX, \
+        featureClassNeg1ListY = \
+            c.getClassifiedLists(s.featureLengthList, s.featureNumberOfSproutPixelsList, s.featureCenterOfMassList, s.imgRGB)
+
+        # Here we plot the data that has been classified...
+
+        # Could be nice to actually plot the classifier boundering, i.e. so the testing data is plotted together in the confourf plot.
+        # Like the training data.
+
+        featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "rs", "class 1")
+        featureplotClass0Classified.plotData(featureClassNeg1ListX, featureClassNeg1ListY, "bs", "class -1")
+        featureplotClass0Classified.limit_x(0, c.maxX)
+        featureplotClass0Classified.limit_y(0, c.maxY)
+        featureplotClass0Classified.setTitle("Feature plot for classified test data")
+        featureplotClass0Classified.addLegend()
+        featureplotClass0Classified.setXlabel(c.Xlabel)
+        featureplotClass0Classified.setYlabel(c.Ylabel)
+        featureplotClass0Classified.updateFigure()
+
+
+
+
+
 
         # Showing the training data in order to exit the program...
         # cv2.imshow("TrainingData1", i.trainingData1)
         # cv2.imshow("trainingDataNeg1", i.trainingDataNeg1)
-
 
         # If the user push "ESC" the program close down.
         k = cv2.waitKey(30) & 0xff

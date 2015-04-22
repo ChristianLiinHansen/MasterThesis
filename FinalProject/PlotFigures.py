@@ -10,10 +10,10 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from pylab import *
 
 class PlotFigures(object):
-    def __init__(self, titleName, fileName):
-        self.fileName = fileName
+    def __init__(self, figNumb):
         self.size = 18
         font = {'size': self.size}
         plt.rc('xtick', labelsize=self.size)
@@ -21,9 +21,11 @@ class PlotFigures(object):
         plt.rc('font', **font)
 
         # self.fig = plt.figure(num=titleName, figsize=(10, 8.21), dpi=300, facecolor='w', edgecolor='k')
-        self.fig = plt.figure(num=titleName, figsize=(10, 8.21), dpi=100, facecolor='w', edgecolor='k')
-        self.setTitle(titleName)
-        self.ax = plt.subplot(111)
+        plt.figure(figNumb, figsize=(10, 8.21), dpi=100, facecolor='w', edgecolor='k')
+        plt.subplot(111)
+
+    def setTitle(self, title):
+        plt.title(title)
 
     def plotContourf(self, xx, yy, Z):
         plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
@@ -32,8 +34,8 @@ class PlotFigures(object):
         plt.plot(x, y, string_icon, label=string_label, markersize=self.size/2)
 
         # Shrink current axis by 20%
-        box = self.ax.get_position()
-        self.ax.set_position([box.x0, box.y0, box.width * 0.95, box.height])
+        # box = self.ax.get_position()
+        # self.ax.set_position([box.x0, box.y0, box.width * 0.95, box.height])
 
         # Put a legend to the right of the current axis
         # self.ax.legend(loc='center left', bbox_to_anchor=(0.8, 1))
@@ -44,9 +46,6 @@ class PlotFigures(object):
 
     def addLegend(self):
         plt.legend(loc= "lower right")
-
-    def setTitle(self, titleName):
-        plt.title(titleName)
 
     def setXlabel(self, string_x):
         plt.xlabel(string_x, fontsize=self.size)
@@ -65,11 +64,12 @@ class PlotFigures(object):
 
     def updateFigure(self):
         plt.show(block=False)   # It is very big with 300 dpi
-        self.saveFigure()
+        draw()
+        # self.saveFigure()
 
     def clearFigure(self):
         plt.clf()
 
-    def saveFigure(self):
+    def saveFigure(self, fileName):
         # plt.annotate('Removed datapoint', xy=(0.33, 0.43), xytext=(0.6, 0.5), arrowprops=dict(facecolor='black', shrink=0.005))
-        plt.savefig("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(self.fileName) + ".png")
+        plt.savefig("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(fileName) + ".png")

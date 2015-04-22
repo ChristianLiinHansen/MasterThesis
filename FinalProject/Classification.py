@@ -8,6 +8,7 @@ Created on 1/4-2015
 
 import numpy as np
 import cv2
+from Segmentation import Segmentation
 from PlotFigures import PlotFigures
 from sklearn import svm, datasets
 import matplotlib.pyplot as plt
@@ -25,7 +26,7 @@ class Classification(object):
         self.maxY = 255
 
         # Load the training data from class1 and class -1
-        featureplot = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
+        featureplot = PlotFigures(1)
         featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
         featureplot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
 
@@ -36,6 +37,7 @@ class Classification(object):
         featureplot.setYlabel(self.Ylabel)
         featureplot.limit_x(0, self.maxX)
         featureplot.limit_y(0, self.maxY)
+        featureplot.setTitle("Feature space for training data class 1 and class -1")
         featureplot.addLegend()
         featureplot.updateFigure()
 
@@ -55,16 +57,18 @@ class Classification(object):
         self.h = 0.1
         xx, yy, self.Z = self.runSVM(X, y, C, self.h)
 
-        svmPlot = PlotFigures("SVM classification with training using a linear kernel", "SVMlinearKernel")
+        svmPlot = PlotFigures(2)
         svmPlot.plotContourf(xx, yy, self.Z)
 
         # Use the classifier to check if an input
-        testData = (20, 45)
-
-        print "With a testData point of", testData, "the class is:", self.doClassification(self.Z, testData, self.h)
+        # x = 20
+        # y = 50
+        # testData = (x, y)
+        #
+        # print "With a testData point of", testData, "the class is:", self.doClassification(x, y)
 
         # Plot the testData point
-        svmPlot.plotData(testData[0], testData[1], "gs", "testdata")
+        # svmPlot.plotData(testData[0], testData[1], "gs", "testdata")
 
         # Plot also the training points
         svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
@@ -73,14 +77,65 @@ class Classification(object):
         svmPlot.setYlabel("Number of sprout pixels in bounding box")
         svmPlot.limit_x(0, self.maxX)
         svmPlot.limit_y(0, self.maxY)
+        svmPlot.setTitle("SVM classification with training using a linear kernel")
         svmPlot.addLegend()
         svmPlot.updateFigure()
 
-        print "Are we there yet?"
+        print "Finish with the supervised learning..."
 
-    def doClassification(self, Z, testData, h):
-        # Instead of swopping x and y, we just look up in a y,x fashion
-        return Z[testData[1]/h, testData[0]/h]
+    def doClassification(self, testDataX, testDataY):
+        print "Now we are inside doClassification..."
+
+        Zlist = []
+        for element in zip(testDataX, testDataY):
+            # Instead of swopping x and y, we just look up in a y,x fashion
+            temp = self.Z[element[1]/self.h, element[0]/self.h]
+            Zlist.append(temp)
+        return Zlist
+
+    def getClassifiedLists(self, testDataX, testDataY, centerList, imgRGB):
+        imgClassify = imgRGB.copy()
+        featureClass1ListX = []
+        featureClass1ListY = []
+        featureClassNeg1ListX = []
+        featureClassNeg1ListY = []
+
+        centerClass1List = []
+        centerClassNeg1List = []
+
+        # OK input of testDataX, testDataY and centerList. The imgRGB is tested and it works fine with cv2.imshow(...)
+        # print "Inside getClassifiedList, the testDataX is:", testDataX, "and the length is:", len(testDataX)
+        # print "Inside getClassifiedList, the testDataY is:", testDataY, "and the length is:", len(testDataY)
+        # print "Inside getClassifiedList, the centerList is:", centerList, "and the length is:", len(centerList)
+
+        Znew = self.doClassification(testDataX, testDataY)
+        # print "The Znew is:", Znew, "with a length of:", len(Znew)
+
+        for index in zip(Znew, testDataX, testDataY, centerList):
+            # print "So the index is", index[0]
+            # print "So the x,y is:", index[1], index[2]
+            # print "So the center is", index[3]
+
+            # If the Z value at this index is zero
+            if index[0] == 1:
+                featureClass1ListX.append(index[1])
+                featureClass1ListY.append(index[2])
+                centerClass1List.append(index[3])
+                cv2.circle(imgClassify, index[3], 5, (0, 0, 255), -1)
+            else:
+                featureClassNeg1ListX.append(index[1])
+                featureClassNeg1ListY.append(index[2])
+                centerClassNeg1List.append(index[3])
+                cv2.circle(imgClassify, index[3], 5, (255, 0, 0), -1)
+        # Show the classified result
+        cv2.imshow("Classified result", imgClassify)
+        return featureClass1ListX, featureClass1ListY, featureClassNeg1ListX, featureClassNeg1ListY
+
+
+
+
+
+
 
     def runSVM(self, X, y, C, h):
 
