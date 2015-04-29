@@ -16,7 +16,7 @@ def main():
 
     # Load training data from the the sklearn library datasets.
     iris = datasets.load_iris()
-    print iris
+    # print iris
 
     # We only take the first two features. We could avoid this ugly slicing by using a two-dim dataset
     X = iris.data[:, :2]
@@ -24,12 +24,18 @@ def main():
     # Store the "target" from the dataset iris into y
     y = iris.target
 
+    # print "The X is:", X
+    # print "The y is:", y
+
     # Step size in the mesh
-    h = .02
+    h = 0.02
 
     # We create an instance of SVM and fit out data. We do not scale our
     # data since we want to plot the support vectors
     C = 1.0  # SVM regularization parameter
+
+    print "The length of y is:", len(y)
+    print "The length of X is:", len(X)
     svc = svm.SVC(kernel='linear', C=C).fit(X, y)
     rbf_svc = svm.SVC(kernel='rbf', gamma=0.7, C=C).fit(X, y)
     poly_svc = svm.SVC(kernel='poly', degree=3, C=C).fit(X, y)
@@ -53,9 +59,12 @@ def main():
         plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
         Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+        print "Z is:", Z
 
         # Put the result into a color plot
         Z = Z.reshape(xx.shape)
+        print "Now Z is:", Z
+
         plt.contourf(xx, yy, Z, cmap=plt.cm.Paired, alpha=0.8)
 
         # Plot also the training points
@@ -69,6 +78,17 @@ def main():
         plt.title(titles[i])
 
     plt.show()
+
+    # print "xx is:", xx
+    # print "yy is:", yy
+    # print "Z is:", Z
+    #
+    # print "And the length of xx is:", len(xx)
+    # print "And the length of yy is:", len(yy)
+    # print "And the length of Z is:", len(Z)
+    #
+    # file = open('workfile.txt', 'w')
+    # file.write(str(xx))
 
 if __name__ == '__main__':
     main()
