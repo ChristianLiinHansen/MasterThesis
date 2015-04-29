@@ -95,14 +95,12 @@ def main():
         featureClass1ListX, \
         featureClass1ListY, \
         featureClassNeg1ListX, \
-        featureClassNeg1ListY = \
-            c.getClassifiedLists(s.featureLengthList, s.featureNumberOfSproutPixelsList, s.featureCenterOfMassList, s.imgRGB)
+        featureClassNeg1ListY, \
+        centerClass1List, \
+        centerClassNeg1List \
+            = c.getClassifiedLists(s.featureLengthList, s.featureNumberOfSproutPixelsList, s.featureCenterOfMassList, s.imgRGB)
 
         # Here we plot the data that has been classified...
-
-        # Could be nice to actually plot the classifier boundering, i.e. so the testing data is plotted together in the confourf plot.
-        # Like the training data.
-
         featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "rs", "class 1")
         featureplotClass0Classified.plotData(featureClassNeg1ListX, featureClassNeg1ListY, "bs", "class -1")
         featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
@@ -114,11 +112,21 @@ def main():
         featureplotClass0Classified.setYlabel(c.Ylabel)
         featureplotClass0Classified.updateFigure()
 
+        # With the list of COM for good and bad seeds, the last component is used
+        # Remember that the output now is in cm. Change the z value to 0.30 to get the x,y, in meters,
+        # which is needed for the UR-robot. 
+        xyzList0, xyzList1 = o.convertUV2XYZ(centerClass1List, centerClassNeg1List, imgInput.shape)
+        print "The xyzList0 is:", xyzList0
+        print "The xyzList1 is:", xyzList1
+
+
+
         # If the user push "ESC" the program close down.
         k = cv2.waitKey(30) & 0xff
         if k == 27:
             i.closeDown()
             break
+    print "The camera is not open...."
 
 if __name__ == '__main__':
     main()

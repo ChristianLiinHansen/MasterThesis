@@ -84,8 +84,6 @@ class Classification(object):
         print "Finish with the supervised learning..."
 
     def doClassification(self, testDataX, testDataY):
-        print "Now we are inside doClassification..."
-
         Zlist = []
         for element in zip(testDataX, testDataY):
             # Instead of swopping x and y, we just look up in a y,x fashion
@@ -129,7 +127,7 @@ class Classification(object):
                 cv2.circle(imgClassify, index[3], 5, (255, 0, 0), -1)
         # Show the classified result
         cv2.imshow("Classified result", imgClassify)
-        return featureClass1ListX, featureClass1ListY, featureClassNeg1ListX, featureClassNeg1ListY
+        return featureClass1ListX, featureClass1ListY, featureClassNeg1ListX, featureClassNeg1ListY, centerClass1List, centerClassNeg1List
 
     def runSVM(self, X, y, C, h):
 
