@@ -55,10 +55,10 @@ class Classification(object):
         C = 1.0
         # Step size in the mesh
         self.h = 0.1
-        xx, yy, self.Z = self.runSVM(X, y, C, self.h)
+        self.xx, self.yy, self.Z = self.runSVM(X, y, C, self.h)
 
         svmPlot = PlotFigures(2)
-        svmPlot.plotContourf(xx, yy, self.Z)
+        svmPlot.plotContourf(self.xx, self.yy, self.Z)
 
         # Use the classifier to check if an input
         # x = 20
@@ -130,12 +130,6 @@ class Classification(object):
         # Show the classified result
         cv2.imshow("Classified result", imgClassify)
         return featureClass1ListX, featureClass1ListY, featureClassNeg1ListX, featureClassNeg1ListY
-
-
-
-
-
-
 
     def runSVM(self, X, y, C, h):
 

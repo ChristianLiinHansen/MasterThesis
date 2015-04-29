@@ -19,13 +19,6 @@ class Segmentation(object):
         # Placeholder for the RGB where contours are drawn on
         self.imgDraw = []
 
-        # if classStamp == -1:
-        #     cv2.imshow("So checking inputs again for imgRGB", imgRGB)
-        #     cv2.imshow("So checking inputs again for imgFrontGround", imgFrontGround)
-        #     cv2.imshow("So checking inputs again for imgSeedAndSprout", imgSeedAndSprout)
-        #     cv2.imshow("So checking inputs again for imgSprout", imgSprout)
-        #     cv2.waitKey(0)
-
         # Store which class the image is stamped
         self.classStamp = classStamp
 
@@ -33,7 +26,41 @@ class Segmentation(object):
         self.contoursFrontGround = self.getContours(imgFrontGround)
 
         # Filter out the number of contours, like small noise-blobs, etc.
-        self.contoursFrontGroundFiltered, listOfAreas = self.getContoursFilter(self.contoursFrontGround, 200, 2000)
+        self.contoursFrontGroundFiltered, listOfAreas, listOfTooSmallContourAreas, listOfTooSmallContour = self.getContoursFilter(self.contoursFrontGround, 200, 2000)
+
+        # Just for fun! How does "too small" contours look like?
+        # print "So the list listOfTooSmallContourAreas is:", listOfTooSmallContourAreas
+        # # print "And the contours for thoese that where to small is", listOfTooSmallContour
+        # debugImg = imgRGB.copy()
+        # cv2.drawContours(debugImg, listOfTooSmallContour, -1, (0, 255, 0), 1)
+        #
+        # for tooSmallcontour in listOfTooSmallContour:
+        #     # Calculate the center of mass for each contour
+        #     center = self.getCentroidOfSingleContour(tooSmallcontour)
+        #     cv2.circle(debugImg, (center[1], center[0]), 20, (255, 255, 0), 2)
+        #
+        # self.saveImg("TooSmallContours", debugImg)
+
+        # To test the center of mass with moments
+        # debugImg = imgRGB.copy()
+        # for contour in self.contoursFrontGroundFiltered:
+        #     center = self.getCentroidOfSingleContour(contour)
+        #     cv2.circle(debugImg, (center[1], center[0]), 5, (0, 255, 0), -1)
+        # # cv2.imshow("Show COM", debugImg)
+        #
+        # # To test the center of mass with minRectArea
+        # for contour in self.contoursFrontGroundFiltered:
+        #     rect = cv2.minAreaRect(contour)
+        #     center = rect[0]
+        #     print "The center is:", center
+        #     x = int(round(center[0], 0))
+        #     y = int(round(center[1], 0))
+        #     print "The x of center is:", x
+        #     print "The y of center is:", y
+        #     cv2.circle(debugImg, (x, y), 5, (0, 0, 255), -1)
+        #
+        # self.saveImg("CompareMomentsVsMinRectAreaCenter", debugImg)
+        # cv2.imshow("Show COM", debugImg)
 
         # Debugging. Draw the contours and store it in the imgContours.
         self.imgContours = self.drawContour(imgFrontGround, self.contoursFrontGroundFiltered, lineWidth=2)
@@ -58,82 +85,6 @@ class Segmentation(object):
             return list1
         else:
             return list2
-
-    def runKmediansAlgorithm(self, sprout):
-
-        print 20*'-',"Step 1", 20*'-'
-        print "The sprout contains this:", sprout, " with a length of:", len(sprout)
-        # Step 1 in K-means algorithm.
-        # Randomly pick a center location from the sprout. In this case we only have K = 2
-
-        # Make sure that the centerCluster1 are different from centerCluster2
-        # centerCluster1 = (485, 502)
-        # centerCluster2 = (486, 503)
-        centerCluster1 = 0
-        centerCluster2 = 0
-        while centerCluster1 == centerCluster2:
-            centerCluster1 = random.choice(sprout)
-            centerCluster2 = random.choice(sprout)
-
-        print "The first random coordinate is:", centerCluster1
-        print "The secound random coordinate is:", centerCluster2
-
-        iterationCounter = 0
-        # Let K-medians runs at least 1 time
-        while True:
-            # Defines the cluster arrays
-            cluster1List = []
-            cluster2List = []
-            iterationCounter = iterationCounter + 1
-
-            print "\n", 20*'-',"Step 2", 20*'-'
-
-            for element in sprout:
-                # Calculate the distance from each element in sprout to the random picked pixel locations.
-
-                d1 = np.sqrt(np.sum(np.power(np.array(centerCluster1)-np.array(element),2)))
-                d2 = np.sqrt(np.sum(np.power(np.array(centerCluster2)-np.array(element),2)))
-
-                # If the euclidian distance between the ranPixLoc1 and the pixellocation in the sprout list is less
-                # than the euclidian distance between the ranPixLoc2 and the pixellocation in the sprout list,
-                # than we assign the element to the cluster sproutCluster
-                if d1 < d2:
-                    # print "d1 < d2"
-                    # print "cluster1List contains before:", cluster1List
-                    cluster1List.append(element)
-                    # print "cluster1List contains after:", cluster1List
-
-                # Else d2 < d1 and we assign the element to cluster nonSproutCluster
-                else:
-                    # print "d2 < d1"
-                    # print "cluster2List contains before:", cluster2List
-                    cluster2List.append(element)
-                    # print "cluster2List contains after:", cluster2List
-
-            print "Now all the elements has run through. Cluster1List is:", cluster1List, " and length is:", len(cluster1List)
-            print "Now all the elements has run through. cluster2List is:", cluster2List, " and length is:", len(cluster2List)
-
-            # Step 3: Update the centers for each clusters
-            cluster1ListMedian = tuple(map(np.median, zip(*cluster1List)))
-            cluster1ListMedianRound = (int(round(cluster1ListMedian[0],0)), int(round(cluster1ListMedian[1],0)))
-            newCenterCluster1 = cluster1ListMedianRound
-
-            cluster2ListMedian = tuple(map(np.median, zip(*cluster2List)))
-            cluster2ListMedianRound = (int(round(cluster2ListMedian[0],0)), int(round(cluster2ListMedian[1],0)))
-            newCenterCluster2 = cluster2ListMedianRound
-
-            print "The median newCenterCluster1 is:", newCenterCluster1
-            print "The median newCenterCluster2 is:", newCenterCluster2
-
-            # Check if we should break the algorithm
-            if (centerCluster1 == newCenterCluster1) and (centerCluster2 == newCenterCluster2):
-                print "Breaking the algorithm after the following iterations:", iterationCounter
-                break
-            else:
-                # Update the center
-                centerCluster1 = newCenterCluster1
-                centerCluster2 = newCenterCluster2
-        return cluster1List, cluster2List
 
     def runKmeansAlgorithm(self, sprout):
 
@@ -296,11 +247,9 @@ class Segmentation(object):
 
         # Run through all the contours
         # print "This is class ", classStamp
-        #Debugging! Remove a lot of the white pixels, for better check if the cluster algoritm works...
-        # DEBUGimgSeedAndSprout = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSproutDEBUG.png", cv2.CV_LOAD_IMAGE_COLOR)
-        # DEBUGimgSeedAndSprout = cv2.cvtColor(DEBUGimgSeedAndSprout, cv2.COLOR_BGR2GRAY)
-        self.imgDraw = self.imgRGB.copy()
-        # imgDraw = cv2.cvtColor(imgDraw, cv2.COLOR_GRAY2BGR)
+        # self.imgDraw = self.imgRGB.copy()
+        self.imgDraw = imgSeedAndSprout.copy()
+        self.imgDraw = cv2.cvtColor(self.imgDraw, cv2.COLOR_GRAY2BGR)
 
         for contour in contours:
             x, y, width, height = cv2.boundingRect(contour)
@@ -315,7 +264,8 @@ class Segmentation(object):
             contourCOMSwopped = (contourCOM[1], contourCOM[0])
 
             # Draw the center of mass on the RGB image, to verify that the contourCOM is correct
-            # cv2.circle(imgRGB, contourCOMSwopped, 3, (0,255,0), -1)
+            # imgDraw2 = imgRGB.copy()
+            # cv2.circle(imgDraw2, contourCOMSwopped, 3, (0,255,0), -1)
 
             # Debugging: Drawing the boundingBox for each contour.
             # self.drawBoundingBox(p1, p2, p3, p4, self.imgContours, (255, 0, 0), 1)
@@ -382,10 +332,6 @@ class Segmentation(object):
                     # Perhaps also some with variance, but this is not important right now.
                     sprout = self.getLongestList(cluster1List, cluster2List)
 
-                else:
-                    pass
-                    # print "Hey this contour has only one blob right? = ", len(blobs), "so we skip the K-means and just load in the list of sprouts directly"
-
                 # Then convert it, in order to let it be used with the minAreaRect function
                 sproutConvertedFormat = self.convertFormatForMinRectArea(sprout)
 
@@ -395,7 +341,7 @@ class Segmentation(object):
                 # Debug: Convert the imgSeedAndSproutImage to an color image, in order to draw color on it
                 p1, p2, p3, p4 = self.getBoxPoints(obbSprout)
                 # Draw on the imgSeedAndSprout image
-                self.drawBoundingBox(p1, p2, p3, p4, self.imgDraw, (0, 0, 255), 2)
+                self.drawBoundingBox(p1, p2, p3, p4, self.imgDraw, (0, 0, 255), 1)
                 # Draw on the RGB input image
                 # self.drawBoundingBox(p1, p2, p3, p4, imgRGB, (0, 0, 255), 1)
 
@@ -422,7 +368,6 @@ class Segmentation(object):
 
 
                 # Here we have to store the length, and width. Thease are the features from the sprout bounding box.
-
                 # DEBUG: Uncomment for plotting each boundingbox individually.
                 # cv2.drawContours(mask, contours, -1, contourColor, lineWidth)
                 # cv2.imshow("imgContours"+str(classStamp), imgDraw)
@@ -449,10 +394,10 @@ class Segmentation(object):
             classStampList.append(classStamp)
 
         # Show result at the end of all contours has been ran through...
-        # cv2.imshow("imgContours"+str(classStamp), imgDraw)
+        # cv2.imshow("imgContours"+str(classStamp), self.imgDraw)
         # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgRGB"+str(classStamp)+".png", self.imgRGB)
         # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgSeedAndSprout"+str(classStamp)+".png", imgSeedAndSprout)
-        # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgContours"+str(classStamp)+".png", imgDraw)
+        # cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/imgContours"+str(classStamp)+".png", self.imgDraw)
         # cv2.waitKey(0)
 
         return centerOfMassList, hueMeanList, hueStdList, numberOfSproutPixelsList, lengthList, widthList, ratioList, classStampList
@@ -519,6 +464,8 @@ class Segmentation(object):
     def getContoursFilter(self, contours, minAreaThreshold, maxAreaThreshold):
         temp_contour = []
         temp_contourArea = []
+        tooSmallContourArea = []
+        tooSmallContour = []
         contourAreaMax = 0
         contourAreaMin = maxAreaThreshold
 
@@ -535,6 +482,8 @@ class Segmentation(object):
             # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
             if (contour_area < minAreaThreshold) or (contour_area > maxAreaThreshold):
                 # print "The contour area is", contour_area, "and hence skipped"
+                tooSmallContourArea.append(contour_area)
+                tooSmallContour.append(contour)
                 continue
 
             temp_contourArea.append(contour_area)
@@ -543,7 +492,7 @@ class Segmentation(object):
         # print "Now contours looks like this:", temp_contour
         # print "The contourAreaMax was:", contourAreaMax
         # print "The contourAreaMin was:", contourAreaMin
-        return temp_contour, temp_contourArea
+        return temp_contour, temp_contourArea, tooSmallContourArea, tooSmallContour
 
     def drawContour(self, img, contours, lineWidth):
 

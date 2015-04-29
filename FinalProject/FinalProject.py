@@ -25,7 +25,7 @@ def main():
     # Initialize the Input component with cameraIndex = 0 (webcamera inbuilt in PC)
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
-    i = Input(1)
+    i = Input(0)
 
     # Initialize the Preprocessing component with the training data1 and -1
     # Input: trainingData1, trainingDataNeg1
@@ -105,6 +105,7 @@ def main():
 
         featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "rs", "class 1")
         featureplotClass0Classified.plotData(featureClassNeg1ListX, featureClassNeg1ListY, "bs", "class -1")
+        featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
         featureplotClass0Classified.limit_x(0, c.maxX)
         featureplotClass0Classified.limit_y(0, c.maxY)
         featureplotClass0Classified.setTitle("Feature plot for classified test data")
@@ -112,15 +113,6 @@ def main():
         featureplotClass0Classified.setXlabel(c.Xlabel)
         featureplotClass0Classified.setYlabel(c.Ylabel)
         featureplotClass0Classified.updateFigure()
-
-
-
-
-
-
-        # Showing the training data in order to exit the program...
-        # cv2.imshow("TrainingData1", i.trainingData1)
-        # cv2.imshow("trainingDataNeg1", i.trainingDataNeg1)
 
         # If the user push "ESC" the program close down.
         k = cv2.waitKey(30) & 0xff
