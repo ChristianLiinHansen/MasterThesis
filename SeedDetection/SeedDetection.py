@@ -588,7 +588,7 @@ class ProcessImage(object):
         imgCopy = image.copy()
         image_show = self.scaleImg(imgCopy, scale)
         cv2.imshow(nameOfWindow, image_show)
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(nameOfWindow) + ".jpg", image_show)
+        cv2.imwrite("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(nameOfWindow) + ".png", image_show)
 
     def getROI(self, image, startY, endY, startX, endX):
         roi = image.copy()
@@ -864,7 +864,7 @@ class PlotFigures():
 
     def saveFigure(self):
         # plt.annotate('Removed datapoint', xy=(0.33, 0.43), xytext=(0.6, 0.5), arrowprops=dict(facecolor='black', shrink=0.005))
-        plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.fileName) + ".jpg")
+        plt.savefig("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(self.fileName) + ".png")
 
 class Perceptron():
     def __init__(self):
