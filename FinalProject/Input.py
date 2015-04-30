@@ -44,7 +44,11 @@ class Input(object):
         # This testing image, should come from the webcamera.
         # However in order to have some testing data, a still image is used, in order to verify the preprocessing, segmentation, classification and output component.
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimaleDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimaleDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krumDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
+
 
         return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
 
@@ -65,7 +69,6 @@ class Input(object):
         return img
 
     def closeDown(self):
-        print("User closed the program...")
         cv2.destroyAllWindows()
         self.cap.release()
 

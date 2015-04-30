@@ -11,11 +11,11 @@ import cv2
 
 class Output(object):
     def __init__(self):
-        print "Now the constructor in Output is called"
+        pass
 
     def convertUV2XYZ(self, uvList0, uvList1, sizeOfImg):
-        print "The first list is:", uvList0
-        print "The secound list is:", uvList1
+        # print "The first list is:", uvList0
+        # print "The secound list is:", uvList1
 
         # Placeholder for the x,y,z list
         xyzList0 = []
@@ -46,8 +46,8 @@ class Output(object):
             xyzList0.append(temp0)
 
         for index in uvList1:
-            x1 = (index[1][0] - imageCol/2) * z / focal_x
-            y1 = (index[1][1] - imageRow/2) * z / focal_x
+            x1 = (index[0] - imageCol/2) * z / focal_x
+            y1 = (index[1] - imageRow/2) * z / focal_x
             temp1 = (x1, y1, z)
             xyzList1.append(temp1)
         return xyzList0, xyzList1

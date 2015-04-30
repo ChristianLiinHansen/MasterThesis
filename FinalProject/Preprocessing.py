@@ -13,6 +13,7 @@ class Preprocessing(object):
 
     def __init__(self, imgInput, classStamp):
 
+
         self.classStamp = classStamp
         # Convert the input image to binary image and use morphology to repair the binary image.
         # This is the front ground image.

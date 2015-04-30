@@ -25,7 +25,7 @@ def main():
     # Initialize the Input component with cameraIndex = 0 (webcamera inbuilt in PC)
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
-    i = Input(0)
+    i = Input(1)
 
     # Initialize the Preprocessing component with the training data1 and -1
     # Input: trainingData1, trainingDataNeg1
@@ -53,10 +53,11 @@ def main():
     # From here, the testing data is loaded by using the webcam, where each seed will be preprocessed, segmented and classified
     # based on what how the line of seperation lies.
 
+    userCloseDown = False
     while i.cameraIsOpen:
 
         # Input from webcamera - Testing data
-        # imgInput = i.getImg()
+        imgInput = i.getImg()
         # cv2.imshow("Streaming from camera", imgInput)
 
         # # As a beginning, the testing data is for now, just a still image, with a mix of diffrent seeds
@@ -66,6 +67,11 @@ def main():
         # The input image is processed through each component as followed, with class 0, since it is unknow which class the
         # test image belogns to...
         p = Preprocessing(imgInput, 0)
+
+        # Show the output of the testData
+        # cv2.imshow("The RGB input image", imgInput)
+        # cv2.imshow("The front ground image", p.imgFrontGround)
+        # cv2.waitKey(0)
 
         # The FrontGround image and SeedAndSprout image is used in the segmentation component
         s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
@@ -114,19 +120,20 @@ def main():
 
         # With the list of COM for good and bad seeds, the last component is used
         # Remember that the output now is in cm. Change the z value to 0.30 to get the x,y, in meters,
-        # which is needed for the UR-robot. 
+        # which is needed for the UR-robot.
         xyzList0, xyzList1 = o.convertUV2XYZ(centerClass1List, centerClassNeg1List, imgInput.shape)
-        print "The xyzList0 is:", xyzList0
-        print "The xyzList1 is:", xyzList1
-
-
+        # print "The xyzList0 is:", xyzList0
+        # print "The xyzList1 is:", xyzList1
 
         # If the user push "ESC" the program close down.
         k = cv2.waitKey(30) & 0xff
         if k == 27:
+            userCloseDown = True
             i.closeDown()
             break
-    print "The camera is not open...."
-
+    if userCloseDown:
+        print "User closed the program..."
+    else:
+        print "The camera is not open.... "
 if __name__ == '__main__':
     main()
