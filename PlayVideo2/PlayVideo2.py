@@ -39,10 +39,10 @@ class CameraDriver:
         self.adjustingSettings = np.array(0, dtype=np.uint8)
 
         # Horizontal cropping lines
-        self.horizontalLines = np.array(200, dtype=np.uint16)
+        self.horizontalLines = np.array(100, dtype=np.uint16)
 
         # Vertical cropping lines
-        self.verticalLines = np.array(500, dtype=np.uint16)
+        self.verticalLines = np.array(400, dtype=np.uint16)
 
     def drawCroppingLines(self, img):
         # Make a copy of the image
@@ -78,7 +78,7 @@ class CameraDriver:
 
     def setSettings(self, absolutFocus, sharpness, absoluteExposure):
         # Set autofocus OFF
-        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
 
         # Set exposure to Manuel mode  # Choise of auto expusure see --> https://groups.google.com/forum/#!msg/plots-infrared/lSwIqQPJSY8/ZE-LcIj7V-wJ
         # exposure_auto (menu) : min=0 max=3 default=3    value=3  (0: Auto Mode 1: Manual Mode, 2: Shutter Priority Mode, 3: Aperture Priority Mode)
@@ -151,7 +151,11 @@ class CameraDriver:
         return croppedImg
 
     def saveImg(self, nameOfWindow, image):
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(nameOfWindow) + ".jpg", image)
+        # Save the files in this project
+        cv2.imwrite("/home/christian/workspace_python/MasterThesis/SeedDetection/writefiles/" + str(nameOfWindow) + ".png", image)
+
+        # Save the files in the FinalProject project...
+        cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/" + str(nameOfWindow) + ".png", image)
 
     def closeDown(self):
         print("User closed the program...")
@@ -165,7 +169,7 @@ def main():
     pictureTaken = False
 
     # The image_show_ratio is to display images properly on this PC screen.
-    image_show_ratio = 0.5
+    image_show_ratio = 1
 
     # Calling the CameraDriver with cameraIndex as argument. Could switch to 1 og 2 sometimes...
     cd = CameraDriver(1)
@@ -194,6 +198,10 @@ def main():
         image = cd.getImg()
 
         # If the adjustingSetting bottom is ON, then we accept a litte more delay until we are saticefied with the settings.
+        # The program awaits the user for activating the ON/OFF switch in order to adjust the parameters
+        # When the user switch ON the adjust parameters bottom, the image reacts the the user inputs.
+        # When the user is satisficed with the image, the user switch to OFF and the image is saved and stored in the write folder.
+        # /home/christian/workspace_python/MasterThesis/SeedDetection/writefiles
         if cd.adjustingSettings:
 
             # The trackbar setting update
@@ -217,6 +225,7 @@ def main():
 
                 # If this is the first time we se the result after adjusting the settings, we grap a picture of it for late use.
                 if pictureTaken is False:
+                    print "The picture is taken and saved..."
                     cd.saveImg("ImageCropped", croppedImg)
                     pictureTaken = True
 
