@@ -8,6 +8,8 @@ Created on 1/4-2015
 
 import cv2
 import os
+import numpy as np
+from CameraDriver import CameraDriver
 
 class Input(object):
 
@@ -16,19 +18,65 @@ class Input(object):
         self.cap = cv2.VideoCapture(cameraIndex)
         self.cameraIsOpen = self.checkCamera()
 
+        # Activate system bottom
+        self.buttonStartSystem = np.array(0, dtype=np.uint8)
+
+        # Disable autofocus to begin with
+        self.autoFocus = np.array(0, dtype=np.uint8)
+
+        # Set focus to a specific value. High values for nearby objects and
+        # low values for distant objects.
+        self.absoluteFocus = np.array(40, dtype=np.uint8)
+
+        # Exposure min=3 max=2047 step=1 default=250 value=250 flags=inactive
+        self.absoluteExposure = np.array(260, dtype=np.uint16)
+
+         # sharpness (int)    : min=0 max=255 step=1 default=128 value=128
+        self.sharpness = np.array(200, dtype=np.uint8)
+
+        # Horizontal cropping lines
+        self.horizontalLines = np.array(100, dtype=np.uint16)
+
+        # Vertical cropping lines
+        self.verticalLines = np.array(420, dtype=np.uint16)
+
         # Initialize the training data
         self.trainingData1 = self.getTrainingDataImages()[0]
         self.trainingDataNeg1 = self.getTrainingDataImages()[1]
-
-        ##############################################################################################
-        # Debugging!!! Not a stream for webcamera with test data image
-        #############################################################################################
         self.testingData = self.getTrainingDataImages()[2]
 
         # Set the resolution
         if self.cameraIsOpen:
             self.setResolution()
-            self.setV4L2()
+
+    #########################################
+    # Trackbar functions                    #
+    ########################################
+
+    def trackbarListener(self, nameOfTrackbar, nameOfWindow):
+        value = cv2.getTrackbarPos(nameOfTrackbar, nameOfWindow)
+        return value
+
+    def addTrackbar(self, nameOfTrackbar, nameOfWindow, value, maxValue):
+        cv2.namedWindow(nameOfWindow)
+        cv2.createTrackbar(nameOfTrackbar, nameOfWindow, value, maxValue, self.nothing)
+
+    def nothing(self, x):
+        pass
+
+    def startTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.buttonStartSystem = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def absoluteExposureTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.absoluteExposure = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def sharpnessTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.sharpness = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+
+    #########################################
+    # Other functions                      #
+    ########################################
 
     def checkCamera(self):
         if self.cap.isOpened():
@@ -55,18 +103,42 @@ class Input(object):
     def setResolution(self):
         self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1920)
         self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1080)
+        print "Pixel width is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
+        print "Pixel height is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)
 
-    def setV4L2(self):
+    def setV4L2(self, absoluteExposure, sharpness):
         # Only works for hardware that support the following "video for linux 2" settings (v4l2).
-        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
-        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=40')
-        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=200')
+
+        # Set autofocus OFF
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
+
+        # Set exposure to Manuel mode  # Choise of auto expusure see --> https://groups.google.com/forum/#!msg/plots-infrared/lSwIqQPJSY8/ZE-LcIj7V-wJ
+        # exposure_auto (menu) : min=0 max=3 default=3    value=3  (0: Auto Mode 1: Manual Mode, 2: Shutter Priority Mode, 3: Aperture Priority Mode)
         os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_auto=1')
-        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_absolute=260')
+
+        # Set the absolute focus
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=' + str(absolutFocus))
+
+        # Set the absolute exposure
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_absolute=' + str(absoluteExposure))
+
+        # Set the sharpness
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=' + str(sharpness))
+
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=40')
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=200')
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_auto=1')
+        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_absolute=260')
 
     def getImg(self):
         ret, img = self.cap.read()
         return img
+
+    def getCroppedImg(self):
+        img = self.getImg()
+        croppedImg = img.copy()
+        croppedImg = croppedImg[self.horizontalLines:img.shape[0]-self.horizontalLines, self.verticalLines:img.shape[1]-self.verticalLines]
+        return croppedImg
 
     def closeDown(self):
         cv2.destroyAllWindows()

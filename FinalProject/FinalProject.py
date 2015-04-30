@@ -10,6 +10,7 @@ from Segmentation import Segmentation
 from Classification import Classification
 from Output import Output
 from PlotFigures import PlotFigures
+
 from pylab import *
 
 
@@ -43,7 +44,7 @@ def main():
                        s1.featureClassStampList,
                        sNeg1.featureLengthList,
                        sNeg1.featureNumberOfSproutPixelsList,
-                       sNeg1.featureClassStampList)
+                       sNeg1.featureClassStampList, False)
 
     # Initialize the Output component
     o = Output()
@@ -54,40 +55,77 @@ def main():
     # based on what how the line of seperation lies.
 
     userCloseDown = False
+
+    # Setting the names of different windows
+    nameOfTrackBarWindow = "Trackbar settings"
+    nameOfTrackBar1 = "Start system"
+    nameOfTrackBar2 = "Absolute exposure"
+    nameOfTrackBar3 = "Sharpness"
+    nameOfVideoStreamWindow = "Trackbar settings" # I just set the trackbar and the streaming video in the same window...
+
+    # Add the trackbar in the trackbar window
+    i.addTrackbar(nameOfTrackBar1, nameOfTrackBarWindow, i.buttonStartSystem, 1)
+    i.addTrackbar(nameOfTrackBar2, nameOfTrackBarWindow, i.absoluteExposure, 2047)
+    i.addTrackbar(nameOfTrackBar3, nameOfTrackBarWindow, i.sharpness, 255)
+
     while i.cameraIsOpen:
 
+        # If the user has not pushed the start button.
+        while not i.buttonStartSystem:
+            # Listen for changes for adjusting the settings
+            i.startTrackBar(nameOfTrackBar1, nameOfTrackBarWindow)
+            i.absoluteExposureTrackBar(nameOfTrackBar2, nameOfTrackBarWindow)
+            i.sharpnessTrackBar(nameOfTrackBar3, nameOfTrackBarWindow)
+
+            # Then do the adjustments and call the v4l2 settings.
+            i.setV4L2(i.absoluteExposure, i.sharpness)
+
+            # Show the result afterwards.
+            cv2.imshow(nameOfVideoStreamWindow, i.getCroppedImg())
+            cv2.waitKey(1)
+        # cv2.destroyWindow(nameOfVideoStreamWindow)
+
         # Input from webcamera - Testing data
-        imgInput = i.getImg()
-        # cv2.imshow("Streaming from camera", imgInput)
+        # imgInput = i.getImg()
+        imgInput = i.getCroppedImg()
+        cv2.imshow(nameOfVideoStreamWindow, imgInput)
+        # Here the directly loaded image needs to be cropped, and adjusted in a way so the test data is the same format
 
         # # As a beginning, the testing data is for now, just a still image, with a mix of diffrent seeds
         # # Later the imgInput should come from the camera as written above.
-        imgInput = i.testingData
+        # imgInput = i.testingData
 
         # The input image is processed through each component as followed, with class 0, since it is unknow which class the
         # test image belogns to...
+        print "Preprocessing image..."
         p = Preprocessing(imgInput, 0)
+        print "Done preprocessing image..."
 
         # Show the output of the testData
         # cv2.imshow("The RGB input image", imgInput)
         # cv2.imshow("The front ground image", p.imgFrontGround)
+        # cv2.imshow("The imgSprout image", p.imgSprout)
+        # cv2.imshow("The imgSeedAndSprout image", p.imgSeedAndSprout)
         # cv2.waitKey(0)
 
         # The FrontGround image and SeedAndSprout image is used in the segmentation component
+        print "Segmentate image..."
         s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
         cv2.imshow("Show the RGB image with contours of sprouts", s.imgDraw)
+        print "Done segmentate image..."
 
-        # Plot the featureplot for the testing data, e.i class 0
-        featureplotClass0 = PlotFigures(3)
-        featureplotClass0.clearFigure()
-        featureplotClass0.plotData(s.featureLengthList, s.featureNumberOfSproutPixelsList, "gs", "class 0")
-        featureplotClass0.limit_x(0, c.maxX)
-        featureplotClass0.limit_y(0, c.maxY)
-        featureplotClass0.setTitle("Feature plot for testing data class 0")
-        featureplotClass0.addLegend()
-        featureplotClass0.setXlabel(c.Xlabel)
-        featureplotClass0.setYlabel(c.Ylabel)
-        featureplotClass0.updateFigure()
+        if False:
+            # Plot the featureplot for the testing data, e.i class 0
+            featureplotClass0 = PlotFigures(3)
+            featureplotClass0.clearFigure()
+            featureplotClass0.plotData(s.featureLengthList, s.featureNumberOfSproutPixelsList, "gs", "class 0")
+            featureplotClass0.limit_x(0, c.maxX)
+            featureplotClass0.limit_y(0, c.maxY)
+            featureplotClass0.setTitle("Feature plot for testing data class 0")
+            featureplotClass0.addLegend()
+            featureplotClass0.setXlabel(c.Xlabel)
+            featureplotClass0.setYlabel(c.Ylabel)
+            featureplotClass0.updateFigure()
 
         # Now with the featureplot of class0, we need to draw the featureplot where the class0 is going to get classified.
         # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.

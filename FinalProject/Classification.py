@@ -20,26 +20,27 @@ class Classification(object):
                  featureClassStampListClass1,
                  featureLengthListClassNeg1,
                  featureNumberOfSproutPixelsListClassNeg1,
-                 featureClassStampListClassNeg1):
+                 featureClassStampListClassNeg1,
+                 vizualizeTraining):
 
         self.maxX = 50
         self.maxY = 255
 
-        # Load the training data from class1 and class -1
-        featureplot = PlotFigures(1)
-        featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
-        featureplot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
-
         self.Xlabel = "Length of sprout bounding box"
         self.Ylabel = "Number of sprout pixels in bounding box"
 
-        featureplot.setXlabel(self.Xlabel)
-        featureplot.setYlabel(self.Ylabel)
-        featureplot.limit_x(0, self.maxX)
-        featureplot.limit_y(0, self.maxY)
-        featureplot.setTitle("Feature space for training data class 1 and class -1")
-        featureplot.addLegend()
-        featureplot.updateFigure()
+        # Load the training data from class1 and class -1
+        if vizualizeTraining:
+            featureplot = PlotFigures(1)
+            featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
+            featureplot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
+            featureplot.setXlabel(self.Xlabel)
+            featureplot.setYlabel(self.Ylabel)
+            featureplot.limit_x(0, self.maxX)
+            featureplot.limit_y(0, self.maxY)
+            featureplot.setTitle("Feature space for training data class 1 and class -1")
+            featureplot.addLegend()
+            featureplot.updateFigure()
 
         # Convert the data into a format that is suitable for the SVM
         class1X, class1y = self.convertDataToSVMFormat(featureLengthListClass1,
@@ -70,16 +71,17 @@ class Classification(object):
         # Plot the testData point
         # svmPlot.plotData(testData[0], testData[1], "gs", "testdata")
 
-        # Plot also the training points
-        svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
-        svmPlot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
-        svmPlot.setXlabel("Length of sprout bounding box")
-        svmPlot.setYlabel("Number of sprout pixels in bounding box")
-        svmPlot.limit_x(0, self.maxX)
-        svmPlot.limit_y(0, self.maxY)
-        svmPlot.setTitle("SVM classification with training using a linear kernel")
-        svmPlot.addLegend()
-        svmPlot.updateFigure()
+        if vizualizeTraining:
+            # Plot also the training points
+            svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
+            svmPlot.plotData(featureLengthListClassNeg1, featureNumberOfSproutPixelsListClassNeg1, "bs", "class -1")
+            svmPlot.setXlabel("Length of sprout bounding box")
+            svmPlot.setYlabel("Number of sprout pixels in bounding box")
+            svmPlot.limit_x(0, self.maxX)
+            svmPlot.limit_y(0, self.maxY)
+            svmPlot.setTitle("SVM classification with training using a linear kernel")
+            svmPlot.addLegend()
+            svmPlot.updateFigure()
 
         print "Finish with the supervised learning..."
 
