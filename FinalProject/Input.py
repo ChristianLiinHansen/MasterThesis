@@ -41,9 +41,16 @@ class Input(object):
         self.verticalLines = np.array(420, dtype=np.uint16)
 
         # Initialize the training data
+        # Doing the 2 classes classification
+        # self.trainingData1 = self.getTrainingDataImages()[0]
+        # self.trainingDataNeg1 = self.getTrainingDataImages()[1]
+        # self.testingData = self.getTrainingDataImages()[2]
+
+        # Doing the 3 classes classification
         self.trainingData1 = self.getTrainingDataImages()[0]
-        self.trainingDataNeg1 = self.getTrainingDataImages()[1]
-        self.testingData = self.getTrainingDataImages()[2]
+        self.trainingData2 = self.getTrainingDataImages()[1]
+        self.trainingData3 = self.getTrainingDataImages()[2]
+        self.testingData = self.getTrainingDataImages()[3]
 
         # Set the resolution
         if self.cameraIsOpen:
@@ -70,6 +77,9 @@ class Input(object):
     def absoluteExposureTrackBar(self, nameOfTrackbar, nameOfWindow):
         self.absoluteExposure = self.trackbarListener(nameOfTrackbar, nameOfWindow)
 
+    def absoluteFocusTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.absoluteFocus = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
     def sharpnessTrackBar(self, nameOfTrackbar, nameOfWindow):
         self.sharpness = self.trackbarListener(nameOfTrackbar, nameOfWindow)
 
@@ -85,8 +95,13 @@ class Input(object):
             return False
 
     def getTrainingDataImages(self):
-        imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
+        imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_forkorteDEBUG.png", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
 
         # DEBUGGING!. NOTE: this function is only suppose to read two, or perhaps three training data images. Not a testing image.
         # This testing image, should come from the webcamera.
@@ -96,9 +111,8 @@ class Input(object):
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krumDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
-
-
-        return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
+        # return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
+        return imgTrainingClass1, imgTrainingClass2, imgTrainingClass3, imgTestData
 
     def setResolution(self):
         self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1920)
@@ -106,18 +120,18 @@ class Input(object):
         print "Pixel width is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
         print "Pixel height is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)
 
-    def setV4L2(self, absoluteExposure, sharpness):
+    def setV4L2(self, absolutFocus, absoluteExposure, sharpness):
         # Only works for hardware that support the following "video for linux 2" settings (v4l2).
 
         # Set autofocus OFF
-        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_auto=0')
 
         # Set exposure to Manuel mode  # Choise of auto expusure see --> https://groups.google.com/forum/#!msg/plots-infrared/lSwIqQPJSY8/ZE-LcIj7V-wJ
         # exposure_auto (menu) : min=0 max=3 default=3    value=3  (0: Auto Mode 1: Manual Mode, 2: Shutter Priority Mode, 3: Aperture Priority Mode)
         os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_auto=1')
 
         # Set the absolute focus
-        # os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=' + str(absolutFocus))
+        os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c focus_absolute=' + str(absolutFocus))
 
         # Set the absolute exposure
         os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c exposure_absolute=' + str(absoluteExposure))

@@ -234,7 +234,6 @@ class Segmentation(object):
         return center
 
     def getFeaturesFromEachROI(self, contours, imgSeedAndSprout, imgSprout, imgRGB, classStamp):
-
         # Define the list of values for all the contours for each element.
         centerOfMassList = []
         hueMeanList = []
@@ -251,6 +250,8 @@ class Segmentation(object):
         self.imgDraw = imgSeedAndSprout.copy()
         self.imgDraw = cv2.cvtColor(self.imgDraw, cv2.COLOR_GRAY2BGR)
 
+        print "Number of tracked object is:", len(contours), "for class:", classStamp
+
         for contour in contours:
             x, y, width, height = cv2.boundingRect(contour)
             # p1 = (x, y)
@@ -262,6 +263,7 @@ class Segmentation(object):
             contourCOM = self.getCentroidOfSingleContour(contour)
             # Swop the x,y in order to have correct center of mass
             contourCOMSwopped = (contourCOM[1], contourCOM[0])
+
 
             # Draw the center of mass on the RGB image, to verify that the contourCOM is correct
             # imgDraw2 = imgRGB.copy()
@@ -309,7 +311,7 @@ class Segmentation(object):
             # more away from the real sprout pixels.
 
             if sprout:
-
+                # print "The sprout is:", sprout
                 # Here we insert the check to see if the sprout are clustered together in one cluster or we have a main cluster with additionally noice blobs
                 # In order to check how many clusters there is, the connect component is used, which is implemented in the findContours function
                 # From here, the length of contours tells how many conected component there is in the image.
@@ -319,7 +321,9 @@ class Segmentation(object):
                 # cv2.imshow("Show the imgBBcroppedSprout", imgBBcroppedSprout)
                 # cv2.waitKey(0)
 
-                if len(blobs) != 1:
+                # print "The length of blobs is:", len(blobs)
+                # if len(blobs) != 1:
+                if len(blobs) > 2:
                     # print "Hey this contour has more blobs than 1, so we run the K-means algorithm in order to split up"
                     # Run the K-means algorithm and clustering the list of sprout pixels into K clusters.
                     # cluster1List, cluster2List = self.runKmediansAlgorithm(sprout=sprout)
@@ -374,6 +378,7 @@ class Segmentation(object):
                 # cv2.imshow("RGB input image", imgRGB)
                 # cv2.waitKey(0)
             else:
+                # print "There was no sprouts..."
                 length = 0
                 width = 0
                 ratio = 0
@@ -383,6 +388,7 @@ class Segmentation(object):
 
                 # print "Hey this contour contained no sprout pixels from classstamp", classStamp
 
+            # print "Appending the features.."
             # Append the values to each list
             centerOfMassList.append(contourCOMSwopped)
             hueMeanList.append(hue_mean)

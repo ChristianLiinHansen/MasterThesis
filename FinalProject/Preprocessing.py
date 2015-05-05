@@ -13,7 +13,6 @@ class Preprocessing(object):
 
     def __init__(self, imgInput, classStamp):
 
-
         self.classStamp = classStamp
         # Convert the input image to binary image and use morphology to repair the binary image.
         # This is the front ground image.
@@ -22,8 +21,8 @@ class Preprocessing(object):
 
         # Convert the input to HSV, use inRange to filter the HSV image, and apply morphology to fix repair the binary image
         # This is the sprout image.
-        lower_hsv = np.array([27, 0,147], dtype=np.uint8)
-        upper_hsv = np.array([180, 255, 255], dtype=np.uint8)
+        lower_hsv = np.array([27, 0, 147], dtype=np.uint8)
+        upper_hsv = np.array([255, 255, 255], dtype=np.uint8)
         self.imgSprout = self.getSproutImg(imgInput.copy(), lower_hsv, upper_hsv)
         self.imgSprout = self.getClosing(self.imgSprout, iterations_erode=3, iterations_dilate=3, kernelSize=3)
 
