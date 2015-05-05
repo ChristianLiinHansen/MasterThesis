@@ -256,9 +256,9 @@ def main():
         # featureplotClass0Classified.updateFigure()
 
         # # Here we plot the data that has been classified with 3 classes
-        featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "rs", "class 1")
-        featureplotClass0Classified.plotData(featureClass2ListX, featureClass2ListY, "bs", "class 2")
-        featureplotClass0Classified.plotData(featureClass3ListX, featureClass3ListY, "gs", "class 3")
+        featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "bs", "class 1")
+        featureplotClass0Classified.plotData(featureClass2ListX, featureClass2ListY, "rs", "class 2")
+        featureplotClass0Classified.plotData(featureClass3ListX, featureClass3ListY, "ys", "class 3")
         featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
         featureplotClass0Classified.limit_x(0, c.maxX)
         featureplotClass0Classified.limit_y(0, c.maxY)

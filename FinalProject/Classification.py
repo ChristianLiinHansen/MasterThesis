@@ -64,9 +64,9 @@ class Classification(object):
         # Load the training data from class1, class2 and class3
         if vizualizeTraining:
             featureplot = PlotFigures(1)
-            featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
-            featureplot.plotData(featureLengthListClass2, featureNumberOfSproutPixelsListClass2, "bs", "class 2")
-            featureplot.plotData(featureLengthListClass3, featureNumberOfSproutPixelsListClass3, "gs", "class 3")
+            featureplot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "bs", "class 1")
+            featureplot.plotData(featureLengthListClass2, featureNumberOfSproutPixelsListClass2, "rs", "class 2")
+            featureplot.plotData(featureLengthListClass3, featureNumberOfSproutPixelsListClass3, "ys", "class 3")
             featureplot.setXlabel(self.Xlabel)
             featureplot.setYlabel(self.Ylabel)
             featureplot.limit_x(0, self.maxX)
@@ -74,11 +74,6 @@ class Classification(object):
             featureplot.setTitle("Feature space for training data class 1, 2 and 3")
             featureplot.addLegend()
             featureplot.updateFigure()
-
-
-        imgBreak = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        cv2.imshow("Show what we have is...", imgBreak)
-        cv2.waitKey(0)
 
         # Convert the data into a format that is suitable for the SVM with 2 classes
         # class1X, class1y = self.convertDataToSVMFormat(featureLengthListClass1,
@@ -142,9 +137,9 @@ class Classification(object):
             svmPlot = PlotFigures(2)
             svmPlot.plotContourf(self.xx, self.yy, self.Z)
             # Plot also the training points
-            svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "rs", "class 1")
-            svmPlot.plotData(featureLengthListClass2, featureNumberOfSproutPixelsListClass2, "bs", "class 2")
-            svmPlot.plotData(featureLengthListClass3, featureNumberOfSproutPixelsListClass3, "gs", "class 3")
+            svmPlot.plotData(featureLengthListClass1, featureNumberOfSproutPixelsListClass1, "bs", "class 1")
+            svmPlot.plotData(featureLengthListClass2, featureNumberOfSproutPixelsListClass2, "rs", "class 2")
+            svmPlot.plotData(featureLengthListClass3, featureNumberOfSproutPixelsListClass3, "ys", "class 3")
             svmPlot.setXlabel("Length of sprout bounding box")
             svmPlot.setYlabel("Number of sprout pixels in bounding box")
             svmPlot.limit_x(0, self.maxX)
@@ -241,21 +236,21 @@ class Classification(object):
             # print "So the center is", index[3]
 
             # If the Z value at this index is zero
-            if index[0] == 1:
+            if index[0] == 1:       # If class 1, then the color indication is blue
                 featureClass1ListX.append(index[1])
                 featureClass1ListY.append(index[2])
                 centerClass1List.append(index[3])
-                cv2.circle(imgClassify, index[3], 5, (0, 0, 255), -1)
-            elif index[0] == 2:
+                cv2.circle(imgClassify, index[3], 5, (255, 0, 0), -1)
+            elif index[0] == 2:     # If class 2, then the color indication is red
                 featureClass2ListX.append(index[1])
                 featureClass2ListY.append(index[2])
                 centerClass2List.append(index[3])
-                cv2.circle(imgClassify, index[3], 5, (0, 255, 0), -1)
-            else: #Otherwise the class is class 3
+                cv2.circle(imgClassify, index[3], 5, (0, 0, 255), -1)
+            else: #Otherwise the class is class 3, and the color indication is yellow
                 featureClass3ListX.append(index[1])
                 featureClass3ListY.append(index[2])
                 centerClass3List.append(index[3])
-                cv2.circle(imgClassify, index[3], 5, (255, 0, 0), -1)
+                cv2.circle(imgClassify, index[3], 5, (0, 255, 255), -1)
 
         # Show the classified result
         cv2.imshow("Classified result", imgClassify)
