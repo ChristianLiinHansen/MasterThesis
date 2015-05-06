@@ -220,6 +220,16 @@ def main():
         cv2.imshow("Show the classified result", c.imgClassified)
 
         if saveImages:
+            # Saving image from input component
+            cv2.imwrite(saveImagePath + "imgInput.png", imgInput)
+            # Saving image from preprocessing componet
+            cv2.imwrite(saveImagePath + "imgFrontGround0.png", p.imgFrontGround)
+            cv2.imwrite(saveImagePath + "imgSprout0.png", p.imgSprout)
+            cv2.imwrite(saveImagePath + "imgSeedAndSprout0.png", p.imgSeedAndSprout)
+            # Saving image from segmentation component
+            cv2.imwrite(saveImagePath + "imgDraw0.png", s.imgDraw)
+            cv2.imwrite(saveImagePath + "imgContours0.png", s.imgContours)
+            # Saving image from classification component
             cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
 
         # With the list of COM for good and bad seeds, the last component is used
