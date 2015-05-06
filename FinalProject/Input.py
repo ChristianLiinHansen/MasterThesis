@@ -98,10 +98,17 @@ class Input(object):
         # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
-        imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_forkorteDEBUG.png", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_forkorteDEBUG.png", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
+        # The 6/5-2015.
+        # class1 is too short, class2 is OK, class 3 is too long.
+        # However we are getting a wrong bounding box, the segmentation part needs to be optimized.
+        # No more features is used. The color of the sprout is here not taking into acount, it is only the length of the real sprouts-
+        imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class1RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class2RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class3RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
 
         # DEBUGGING!. NOTE: this function is only suppose to read two, or perhaps three training data images. Not a testing image.
         # This testing image, should come from the webcamera.
@@ -109,7 +116,7 @@ class Input(object):
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimaleDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krumDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/testingData.png", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
         # return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
         return imgTrainingClass1, imgTrainingClass2, imgTrainingClass3, imgTestData
