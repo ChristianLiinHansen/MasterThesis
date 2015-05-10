@@ -272,23 +272,19 @@ def main():
         # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.
         featureplotClass0Classified = PlotFigures(4, "Feature plot for classified test data", "test")
         featureplotClass0Classified.clearFigure()
-        featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
-        x = 0.4
-        y = 0.2
-        featureplotClass0.plotMean(x, y, "cs")
-        x = int(x * 1/c.h)
-        y = int(y * 1/c.h)
-        print "So at x: (", x, ") and y: (", y, ") the Z-value is:", c.Z[y-1, x-1], "\n"
-        plt.show(block=False)   # It is very big with 300 dpi
-        plt.draw()
+        # featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
+        # x = 0.4
+        # y = 0.2
+        # featureplotClass0.plotMean(x, y, "cs")
+        # x = int(x * 1/c.h)
+        # y = int(y * 1/c.h)
+        # print "So at x: (", x, ") and y: (", y, ") the Z-value is:", c.Z[y-1, x-1], "\n"
+        # plt.show(block=False)   # It is very big with 300 dpi
+        # plt.draw()
 
-        imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        cv2.imshow("Pause program", imgPause)
-        cv2.waitKey(0)
-
-        # featureplotClass0.updateFigure()
-        # Getting the featureplot with 3 classes
-        # with normalized data
+        # imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # cv2.imshow("Pause program", imgPause)
+        # cv2.waitKey(0)
 
         featureClass1ListX, \
         featureClass1ListY, \
@@ -299,12 +295,6 @@ def main():
         featureClass3ListX, \
         featureClass3ListY, \
         centerClass3List = c.getClassifiedLists3classes(s.listOfFeatures[featureIndexX], s.listOfFeatures[featureIndexY], s.listOfFeatures[0], imgInput)
-
-        imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        cv2.imshow("Pause program", imgPause)
-        cv2.waitKey(0)
-        print "Ending program here -DEBUG"
-        return 0
 
         # print "The output of the c.getClassfideLists3classes is:"
         #
@@ -323,11 +313,10 @@ def main():
         # # Here we plot the data that has been classified with 3 classes
         print "And now we plot the data in figure 4"
         featureplotClass0Classified.fig.suptitle("Feature plot for classified test data \n "+ str(len(s.contoursFrontGroundFiltered)) + " samples", fontsize=22, fontweight='normal')
-        featureplotClass0Classified.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 999")
-        # featureplotClass0Classified.plotData(c.NormalizeData(featureClass1ListX), c.NormalizeData(featureClass1ListY), "bs", "class 1")
-        # featureplotClass0Classified.plotData(c.NormalizeData(featureClass2ListX), c.NormalizeData(featureClass2ListY), "rs", "class 2")
-        # featureplotClass0Classified.plotData(c.NormalizeData(featureClass3ListX), c.NormalizeData(featureClass3ListY), "ys", "class 3")
-        print "And now we plot the data in figure 4"
+        # featureplotClass0Classified.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 999")
+        featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "bs", "class 1")
+        featureplotClass0Classified.plotData(featureClass2ListX, featureClass2ListY, "rs", "class 2")
+        featureplotClass0Classified.plotData(featureClass3ListX, featureClass3ListY, "ys", "class 3")
         featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
         featureplotClass0Classified.limit_x(0, c.maxX)
         featureplotClass0Classified.limit_y(0, c.maxY)
@@ -337,14 +326,14 @@ def main():
         featureplotClass0Classified.updateFigure()
         featureplotClass0Classified.saveFigure("FeaturePlotForClassifiedTestData")
 
-        imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        cv2.imshow("Pause program", imgPause)
+        # Show the final result...
+        cv2.imshow("Show the classified result", c.imgClassified)
+
+        # imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        # cv2.imshow("Pause program", imgPause)
         cv2.waitKey(0)
         print "Ending program here -DEBUG"
         return 0
-
-        # Show the final result...
-        cv2.imshow("Show the classified result", c.imgClassified)
 
         # if saveImages:
         #     # Saving image from input component

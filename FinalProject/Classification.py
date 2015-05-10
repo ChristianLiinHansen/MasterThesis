@@ -101,7 +101,7 @@ class Classification(object):
         # Here we stack the normalized data, i.e. the SVM runs on normalized data
         X, y = self.stackData3classes(class1X, class2X, class3X, class1y, class2y, class3y)
 
-        # print "The X after is has been stacked:", X
+        # print "The X after iss has been stacked:", X
         # print "The y after is has been stacked:", y
 
         # SVM regularization parameter
@@ -168,77 +168,73 @@ class Classification(object):
         elif featureIndex == 7:
             return "ClassStamp"
 
-    def convertTestDataToZTable(self, testDataX, testDataY):
-        # First normalize the testDataX and testDataY
-        normDataX = self.NormalizeData(testDataX)
-        normDataY = self.NormalizeData(testDataY)
-
-        # Get the number of degits, we need to round with, bases on how the stepsize h is
-        numberOfDegits = int(np.log10(int(1/self.h)))
-
-        # Then we round the data, compair with the stepsize h, to be sure that we hit a valid spot in the meshgrid
-        # I.e. if the grid goes xx = 0.01, 0.02, 0.03 ... 1.0, then a value of 0.013 should get to 0.01. This depends on the h stepsize
-        roundListX = [round(elem, numberOfDegits) for elem in normDataX]
-        roundListY = [round(elem, numberOfDegits) for elem in normDataY]
-
-        # Then multiply each element with the inverse of the stepsize, e.g. h = 0.1, we multiply with 10
-        npArrayX = np.array(roundListX)*int((1/self.h))
-        npArrayY = np.array(roundListY)*int((1/self.h))
-
-        # Then we subtract -1 for each element, since our grid goes from 0 - 9 in a (10,10) shape
-        npArrayXsub = np.array(npArrayX)-1
-        npArrayYsub = np.array(npArrayY)-1
-
-        # Elements which are zeroes will be -1, so
-        # where elements are -1 we set them to 0.
-        npArrayXsubNoNeg = np.array(npArrayXsub).clip(min=0)
-        npArrayYsubNoNeg = np.array(npArrayYsub).clip(min=0)
-
-        return npArrayXsubNoNeg, npArrayYsubNoNeg
+    # def convertTestDataToZTable(self, testDataX, testDataY):
+    #     # First normalize the testDataX and testDataY
+    #     normDataX = self.NormalizeData(testDataX)
+    #     normDataY = self.NormalizeData(testDataY)
+    #
+    #     # Get the number of degits, we need to round with, bases on how the stepsize h is
+    #     numberOfDegits = int(np.log10(int(1/self.h)))
+    #
+    #     # Then we round the data, compair with the stepsize h, to be sure that we hit a valid spot in the meshgrid
+    #     # I.e. if the grid goes xx = 0.01, 0.02, 0.03 ... 1.0, then a value of 0.013 should get to 0.01. This depends on the h stepsize
+    #     roundListX = [round(elem, numberOfDegits) for elem in normDataX]
+    #     roundListY = [round(elem, numberOfDegits) for elem in normDataY]
+    #
+    #     # Then multiply each element with the inverse of the stepsize, e.g. h = 0.1, we multiply with 10
+    #     npArrayX = np.array(roundListX)*int((1/self.h))
+    #     npArrayY = np.array(roundListY)*int((1/self.h))
+    #
+    #     # Then we subtract -1 for each element, since our grid goes from 0 - 9 in a (10,10) shape
+    #     npArrayXsub = np.array(npArrayX)-1
+    #     npArrayYsub = np.array(npArrayY)-1
+    #
+    #     # Elements which are zeroes will be -1, so
+    #     # where elements are -1 we set them to 0.
+    #     npArrayXsubNoNeg = np.array(npArrayXsub).clip(min=0)
+    #     npArrayYsubNoNeg = np.array(npArrayYsub).clip(min=0)
+    #
+    #     return npArrayXsubNoNeg, npArrayYsubNoNeg
 
     def doClassification(self, testDataX, testDataY):
         Zlist = []
         # print "The length of Z is:", len(self.Z), "and the shape is:", self.Z.shape
         # print "The Z contains this flipped:", np.flipud(self.Z)
 
-        # print "The input testDataX to the doClassification is:", testDataX, "\n"
-        # print "The input testDataY to the doClassification is:", testDataY, "\n"
+        print "The input testDataX to the doClassification is:", testDataX, "\n"
+        print "The input testDataY to the doClassification is:", testDataY, "\n"
 
         # Then we normalize the data
-        # print "The input testDataX is normalized to this:", self.NormalizeData(testDataX), "\n"
-        # print "The input testDataY is normalized to this:", self.NormalizeData(testDataY), "\n"
+        normTestDataX = self.NormalizeData(testDataX)
+        normTestDataY = self.NormalizeData(testDataY)
+
+        print "The input testDataX is normalized to this:", normTestDataX, "\n"
+        print "The input testDataY is normalized to this:", normTestDataY, "\n"
 
         # Now we have a normalize dataX and dataY. This coordinate is used as
         # a lookup in the Z-matrix. With h=0.001, we have a Z-matrix shape of (1000, 1000)
-        # So with a datapoint of dataX[0] and dataY[0] = (0.14563624 , 0.03603604)
+        # So with a datapoint of dataX[0] and dataY[0] = (0.14563624 , 0.03587444)
         # this datapoint must be converted to be (after rounding) to be (146 ,36)
         # And in this location we see how the Z-matrix contains of value.
 
-        # Perhaps draw this point
+        for element in zip(normTestDataX, normTestDataY):
+            # The normalized data X andY is adjusted regarding the stepsize h and rounded
+            elementX = int(round(element[0] * 1/self.h, 0))
+            elementY = int(round(element[1] * 1/self.h, 0))
 
-        # write this to a .txt file so we better can view the content.
-        # In the file do a search/replace, ctrl+h and search-replace \n with empty to stack data
-        # np.set_printoptions(threshold=np.nan)
-        # f = open("Z_flipud.txt", 'w')
-        # f.write(str(np.flipud(self.Z)))
-        # So the Z-matrix is OK!
-
-        # With h=0.1, we have Z matrix to have shape of (10,10)
-        # With h=0.01, we have Z matrix to have shape of (100,100)
-        # With h=0.001, we have Z matrix to have shape of (1000,1000)
-        # etc...
-        # testDataXtemp, testDataYtemp = self.convertTestDataToZTable(testDataX, testDataY)
-
-        # # imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        # # cv2.imshow("Pause program", imgPause)
-        # # cv2.waitKey(0)
-        # # print "Ending program here -DEBUG"
-        # return 0
-
-        for element in zip(testDataXtemp, testDataYtemp):
             # Instead of swopping x and y, we just look up in a y,x fashion
             # temp = self.Z[element[1]/self.h, element[0]/self.h]
-            temp = self.Z[element[0], element[1]]
+            # In case there the element X and Y is zero,
+            # the index of Z-matrix is -1.
+            # To compensate for this cheap, we just make a check. Are we having a
+            # a (0.0) sample, then we make it to a (1,1) sample.
+            # Then we do temp = ..... Z(1-1,1-1) which is Z(0.0)
+            if elementX == 0:
+                elementX = 1
+            if elementY == 0:
+                elementY = 1
+
+            temp = self.Z[elementY-1, elementX-1]
             Zlist.append(temp)
         return Zlist
 
@@ -259,7 +255,7 @@ class Classification(object):
         # The testDataX and testDataY is not normalized now...
         Znew = self.doClassification(testDataX, testDataY)
 
-        for index in zip(Znew, testDataX, testDataY, centerList):
+        for index in zip(Znew, self.NormalizeData(testDataX), self.NormalizeData(testDataY), centerList):
             # print "So the index is", index[0]
             # print "So the x,y is:", index[1], index[2]
             # print "So the center is", index[3]
@@ -283,9 +279,6 @@ class Classification(object):
                 cv2.circle(self.imgClassified, index[3], 5, (0, 255, 255), -1)
             else:
                 print "What are we doing here?"
-        # cv2.imshow("Show the classified result", self.imgClassified)
-        # print "Wait a little here..."
-        # cv2.waitKey(0)
 
         # Returning with 3 classes
         return featureClass1ListX, \

@@ -139,7 +139,7 @@ class Input(object):
         imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class1RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
         imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class2RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
         imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class3RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
-
+        imgTestData       = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class0RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
 
         # 8/5-2015
         # class1 is too short, class2 is OK, class 3 is too long with 4000 kelvin cold white
@@ -155,7 +155,7 @@ class Input(object):
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimaleDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krumDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgRGBwith4000K.png", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewTrainingDataWith4000K/4000Kclass0.png", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewTrainingDataWith4000K/4000Kclass0.png", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
         # return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
         return imgTrainingClass1, imgTrainingClass2, imgTrainingClass3, imgTestData
