@@ -14,45 +14,15 @@ from sklearn import svm, datasets
 import matplotlib.pyplot as plt
 
 class Classification(object):
-    # With 3 classes
-    # def __init__(self,
-    #              featureLengthListClass1,
-    #              featureNumberOfSproutPixelsListClass1,
-    #              featureClassStampListClass1,
-    #
-    #              featureLengthListClass2,
-    #              featureNumberOfSproutPixelsListClass2,
-    #              featureClassStampListClass2,
-    #
-    #              featureLengthListClass3,
-    #              featureNumberOfSproutPixelsListClass3,
-    #              featureClassStampListClass3,
-    #
-    #              vizualizeTraining):
-
     def __init__(self, listOfFeaturesClass1, listOfFeaturesClass2, listOfFeaturesClass3, featureIndexX, featureIndexY, vizualizeTraining):
         self.imgClassified = []
         self.maxX = 1
         self.maxY = 1
-
-        # self.maxX = max(listOfFeaturesClass1[featureIndexX]) + max(listOfFeaturesClass2[featureIndexX])
-        # self.maxY = max(listOfFeaturesClass1[featureIndexY]) + max(listOfFeaturesClass2[featureIndexY])
-        # self.maxX = 1000 # DONT UNCOMMENT THIS ONE! MY PC WILL CRASH
-        # self.maxY = 1000 # DONT UNCOMMENT THIS ONE! MY PC WILL CRASH
-
-        # print "The choosen features for class1 we are look at is:",listOfFeaturesClass1[featureIndexX]
-        # print "The choosen features for class1 we are look at is:",listOfFeaturesClass1[featureIndexY]
-        # print "The choosen features for class2 we are look at is:",listOfFeaturesClass2[featureIndexX]
-        # print "The choosen features for class2 we are look at is:",listOfFeaturesClass2[featureIndexY]
-
-        # print "The maxX is:", self.maxX
-        # print "The maxY is:", self.maxY
-
         self.Xlabel = self.getFeatureLabel(featureIndexX)
         self.Ylabel = self.getFeatureLabel(featureIndexY)
 
         # Load the training data from class1, class2 and class3
-        if False:
+        if True:
             featureplot = PlotFigures(1, "Feature plot for training data class 1,2,3 \n",
                                       "with respectively number of samples: " +
                                       str(len(listOfFeaturesClass1[featureIndexX])) + "," +
@@ -72,19 +42,6 @@ class Classification(object):
             featureplot.updateFigure()
             featureplot.saveFigure("FeaturePlotForTrainingData")
 
-        # # Convert the data into a format that is suitable for the SVM with 3 classes NOT NORMALIZED
-        # class1X, class1y = self.convertDataToSVMFormat3classes(listOfFeaturesClass1[featureIndexX],
-        #                                                listOfFeaturesClass1[featureIndexY],
-        #                                                listOfFeaturesClass1[7])
-        #
-        # class2X, class2y = self.convertDataToSVMFormat3classes(listOfFeaturesClass2[featureIndexX],
-        #                                        listOfFeaturesClass2[featureIndexY],
-        #                                        listOfFeaturesClass2[7])
-        #
-        # class3X, class3y = self.convertDataToSVMFormat3classes(listOfFeaturesClass3[featureIndexX],
-        #                                        listOfFeaturesClass3[featureIndexY],
-        #                                        listOfFeaturesClass3[7])
-
         # Convert the data into a format that is suitable for the SVM with 3 classes NORMALIZED
         class1X, class1y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass1[featureIndexX]),
                                                        self.NormalizeData(listOfFeaturesClass1[featureIndexY]),
@@ -101,33 +58,14 @@ class Classification(object):
         # Here we stack the normalized data, i.e. the SVM runs on normalized data
         X, y = self.stackData3classes(class1X, class2X, class3X, class1y, class2y, class3y)
 
-        # print "The X after iss has been stacked:", X
-        # print "The y after is has been stacked:", y
-
         # SVM regularization parameter
         C = 1
         # Step size in the mesh
-        # self.h = 0.1
         self.h = 0.001
         self.xx, self.yy, self.Z, kernel, gamma = self.runSVM(X, y, C, self.h)
-        print "The calculated Z matrix has size:", self.Z.shape
-        print "And the Z matrix is:", self.Z
-
-        # print "The xx is:", self.xx
-        # print "The yy is:", self.yy
-        # print "The Z is:", self.Z
-
-        # Use the classifier to check if an input
-        # x = 20
-        # y = 50
-        # testData = (x, y)
-        #
-        # print "With a testData point of", testData, "the class is:", self.doClassification(x, y)
-        # Plot the testData point
-        # svmPlot.plotData(testData[0], testData[1], "gs", "testdata")
 
         # Visuzalize with 3 classes
-        if False:
+        if True:
             svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C))
 
             svmPlot.plotContourf(self.xx, self.yy, self.Z)
@@ -167,34 +105,6 @@ class Classification(object):
             return "Hue std of pixels in OBB"
         elif featureIndex == 7:
             return "ClassStamp"
-
-    # def convertTestDataToZTable(self, testDataX, testDataY):
-    #     # First normalize the testDataX and testDataY
-    #     normDataX = self.NormalizeData(testDataX)
-    #     normDataY = self.NormalizeData(testDataY)
-    #
-    #     # Get the number of degits, we need to round with, bases on how the stepsize h is
-    #     numberOfDegits = int(np.log10(int(1/self.h)))
-    #
-    #     # Then we round the data, compair with the stepsize h, to be sure that we hit a valid spot in the meshgrid
-    #     # I.e. if the grid goes xx = 0.01, 0.02, 0.03 ... 1.0, then a value of 0.013 should get to 0.01. This depends on the h stepsize
-    #     roundListX = [round(elem, numberOfDegits) for elem in normDataX]
-    #     roundListY = [round(elem, numberOfDegits) for elem in normDataY]
-    #
-    #     # Then multiply each element with the inverse of the stepsize, e.g. h = 0.1, we multiply with 10
-    #     npArrayX = np.array(roundListX)*int((1/self.h))
-    #     npArrayY = np.array(roundListY)*int((1/self.h))
-    #
-    #     # Then we subtract -1 for each element, since our grid goes from 0 - 9 in a (10,10) shape
-    #     npArrayXsub = np.array(npArrayX)-1
-    #     npArrayYsub = np.array(npArrayY)-1
-    #
-    #     # Elements which are zeroes will be -1, so
-    #     # where elements are -1 we set them to 0.
-    #     npArrayXsubNoNeg = np.array(npArrayXsub).clip(min=0)
-    #     npArrayYsubNoNeg = np.array(npArrayYsub).clip(min=0)
-    #
-    #     return npArrayXsubNoNeg, npArrayYsubNoNeg
 
     def doClassification(self, testDataX, testDataY):
         Zlist = []
@@ -309,34 +219,12 @@ class Classification(object):
         print "Starting the SVM..."
 
         # Create a mesh to plot in
-        x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-        y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-
-        print "x_min is:", x_min
-        print "x_max is:", x_max
-        print "y_min", y_min
-        print "y_max", y_max
-
         xx, yy = np.meshgrid(np.arange(0, 1, h), np.arange(0, 1, h))
-
-        # xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
-        # xx, yy = np.meshgrid(np.arange(0, self.maxX, h), np.arange(0, self.maxY, h))
-
         Z = svc.predict(np.c_[xx.ravel(), yy.ravel()])
-        print "The Z computed directly from scv is", Z
 
         # Put the result into a color plot
         Z = Z.reshape(xx.shape)
         return xx, yy, Z, kernel, gamma
-
-    # def plotMesh(self, X):
-    #     # Create a mesh to plot in
-    #     # Step size in the mesh
-    #     h = .02
-    #     x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    #     y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    #     xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
-    #     return xx, yy
 
     def convertDataToSVMFormat(self, feature1, feature2, classStamp):
         a = np.array(feature1)

@@ -27,7 +27,8 @@ def main():
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
     i = Input(0)
-    saveImagePath = "/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewApproachLateNight/"
+    # saveImagePath = "/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/10_5_2015/"
+    saveImagePath = "/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/"
     showAndSaveImagesFlag = False  # However the classified featureplot and final classification is still showed...
 
     # Initialize the Preprocessing component with the training data1, 2, 3
@@ -253,10 +254,9 @@ def main():
 
         if True:
             # Plot the featureplot for the testing data, e.i class 0
-            featureplotClass0 = PlotFigures(3, "Feature plot for testning data class 0 \n",
-                          "with " + str(len(s.listOfFeatures[featureIndexX])) + " number of samples")
+            featureplotClass0 = PlotFigures(3, "Feature plot for testing data class 0 with" + str(len(s.listOfFeatures[featureIndexX])) + " samples", "")
             featureplotClass0.clearFigure() # In order to have a "live" image we clear all information and plot it again
-            featureplotClass0.fig.suptitle("Testing data \n" + str(len(s.listOfFeatures[featureIndexX])) + " samples", fontsize=22, fontweight='normal')
+            featureplotClass0.fig.suptitle("Feature plot for testing data with \n" + str(len(s.listOfFeatures[featureIndexX])) + " samples", fontsize=22, fontweight='normal')
             featureplotClass0.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 0")
             featureplotClass0.setXlabel(c.Xlabel)
             featureplotClass0.setYlabel(c.Ylabel)
@@ -272,7 +272,6 @@ def main():
         # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.
         featureplotClass0Classified = PlotFigures(4, "Feature plot for classified test data", "test")
         featureplotClass0Classified.clearFigure()
-        # featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
         # x = 0.4
         # y = 0.2
         # featureplotClass0.plotMean(x, y, "cs")
@@ -311,8 +310,16 @@ def main():
         # print "centerClass3List is:", centerClass3List
 
         # # Here we plot the data that has been classified with 3 classes
-        print "And now we plot the data in figure 4"
-        featureplotClass0Classified.fig.suptitle("Feature plot for classified test data \n "+ str(len(s.contoursFrontGroundFiltered)) + " samples", fontsize=22, fontweight='normal')
+        # featureplotClass0Classified.fig.suptitle(
+        #     "Feature plot for classified test data. \n "
+        #     + "Total " + str(len(s.contoursFrontGroundFiltered)) +
+        #     " samples", fontsize=22, fontweight='normal')
+
+        featureplotClass0Classified = PlotFigures(4, "Feature plot for testing data class 1,2,3 \n",
+                          "with respectively number of samples: " +
+                          str(len(featureClass1ListX)) + "," +
+                          str(len(featureClass2ListX)) + "," +
+                          str(len(featureClass3ListX)))
         # featureplotClass0Classified.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 999")
         featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "bs", "class 1")
         featureplotClass0Classified.plotData(featureClass2ListX, featureClass2ListY, "rs", "class 2")
@@ -328,25 +335,13 @@ def main():
 
         # Show the final result...
         cv2.imshow("Show the classified result", c.imgClassified)
+        cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
 
         # imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # cv2.imshow("Pause program", imgPause)
-        cv2.waitKey(0)
-        print "Ending program here -DEBUG"
-        return 0
-
-        # if saveImages:
-        #     # Saving image from input component
-        #     cv2.imwrite(saveImagePath + "imgInput.png", imgInput)
-        #     # Saving image from preprocessing componet
-        #     cv2.imwrite(saveImagePath + "imgFrontGround0.png", p.imgFrontGround)
-        #     cv2.imwrite(saveImagePath + "imgSprout0.png", p.imgSprout)
-        #     cv2.imwrite(saveImagePath + "imgSeedAndSprout0.png", p.imgSeedAndSprout)
-        #     # Saving image from segmentation component
-        #     cv2.imwrite(saveImagePath + "imgDraw0.png", s.imgDraw)
-        #     cv2.imwrite(saveImagePath + "imgContours0.png", s.imgContours)
-        #     # Saving image from classification component
-        #     cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
+        # cv2.waitKey(0)
+        # print "Ending program here -DEBUG"
+        # return 0
 
         # With the list of COM for good and bad seeds, the last component is used
         # Remember that the output now is in cm. Change the z value to 0.30 to get the x,y, in meters,
