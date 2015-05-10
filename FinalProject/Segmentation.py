@@ -16,6 +16,9 @@ class Segmentation(object):
         # Debug: Get the RGB input image over in this class to draw contours on the real image etc.
         self.imgRGB = imgRGB
 
+        self.greenLineWidth = 2
+        self.redLineWidth = 2
+
         # Placeholder for the RGB where contours are drawn on
         self.imgDraw = []
 
@@ -26,7 +29,7 @@ class Segmentation(object):
         self.contoursFrontGround = self.getContours(imgFrontGround)
 
         # Filter out the number of contours, like small noise-blobs, etc.
-        self.contoursFrontGroundFiltered, listOfAreas, listOfTooSmallContourAreas, listOfTooSmallContour = self.getContoursFilter(self.contoursFrontGround, 200, 2000)
+        self.contoursFrontGroundFiltered, listOfAreas, listOfTooSmallContourAreas, listOfTooSmallContour = self.getContoursFilter(self.contoursFrontGround, 200, 4000)
 
         # Just for fun! How does "too small" contours look like?
         # print "So the list listOfTooSmallContourAreas is:", listOfTooSmallContourAreas
@@ -63,7 +66,7 @@ class Segmentation(object):
         # cv2.imshow("Show COM", debugImg)
 
         # Debugging. Draw the contours and store it in the imgContours.
-        self.imgContours = self.drawContour(imgFrontGround, self.contoursFrontGroundFiltered, lineWidth=2)
+        self.imgContours = self.drawContour(imgFrontGround, self.contoursFrontGroundFiltered, lineWidth= self.greenLineWidth)
 
         # Before doing any feature extraction, it is important to run through all the pixels, that is in the ROI
         # and not the edge pixels.
@@ -76,6 +79,15 @@ class Segmentation(object):
         self.featureRatioList, \
         self.featureClassStampList \
             = self.getFeaturesFromEachROI(self.contoursFrontGroundFiltered, imgSeedAndSprout, imgSprout, imgRGB, classStamp)
+
+        self.listOfFeatures = [self.featureCenterOfMassList,                 # feature 0
+                        self.featureLengthList,                         # feature 1
+                        self.featureWidthList,                          # feature 2
+                        self.featureRatioList,                          # feature 3
+                        self.featureNumberOfSproutPixelsList,           # feature 4
+                        self.featureHueMeanList,                        # feature 5
+                        self.featureHueStdList,                         # feature 6
+                        self.featureClassStampList]                      # feature 7
 
     def saveImg(self, nameOfImg, img):
         cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(nameOfImg) + ".png", img)
@@ -323,7 +335,7 @@ class Segmentation(object):
 
                 # print "The length of blobs is:", len(blobs)
                 # if len(blobs) != 1:
-                if len(blobs) > 2:
+                if len(blobs) >= 2:
                     # print "Hey this contour has more blobs than 1, so we run the K-means algorithm in order to split up"
                     # Run the K-means algorithm and clustering the list of sprout pixels into K clusters.
                     # cluster1List, cluster2List = self.runKmediansAlgorithm(sprout=sprout)
@@ -345,7 +357,7 @@ class Segmentation(object):
                 # Debug: Convert the imgSeedAndSproutImage to an color image, in order to draw color on it
                 p1, p2, p3, p4 = self.getBoxPoints(obbSprout)
                 # Draw on the imgSeedAndSprout image
-                self.drawBoundingBox(p1, p2, p3, p4, self.imgDraw, (0, 0, 255), 1)
+                self.drawBoundingBox(p1, p2, p3, p4, self.imgDraw, (0, 0, 255), self.redLineWidth)
                 # Draw on the RGB input image
                 # self.drawBoundingBox(p1, p2, p3, p4, imgRGB, (0, 0, 255), 1)
 

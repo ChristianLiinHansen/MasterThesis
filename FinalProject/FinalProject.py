@@ -3,7 +3,6 @@
 
 # Import classes from component files
 import cv2
-import time
 from Input import Input
 from Preprocessing import Preprocessing
 from Segmentation import Segmentation
@@ -11,7 +10,9 @@ from Classification import Classification
 from Output import Output
 from PlotFigures import PlotFigures
 
+from Normalize import NormalizeFeature
 from pylab import *
+
 
 def main():
 
@@ -25,86 +26,49 @@ def main():
     # Initialize the Input component with cameraIndex = 0 (webcamera inbuilt in PC)
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
-    i = Input(1)
-    saveImages = True
-    showImages = False   # However the classified featureplot and final classification is still showed...
-    saveImagePath = "/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/"
-
-    # Save the input images for documentation
-    if saveImages:
-        cv2.imwrite(saveImagePath + "trainingData1.png", i.trainingData1)
-        cv2.imwrite(saveImagePath + "trainingData2.png", i.trainingData2)
-        cv2.imwrite(saveImagePath + "trainingData3.png", i.trainingData3)
-
-    # Test the input images. This was OK at 5/5-2015
-    if showImages:
-        cv2.imshow("The trainingData1 image", i.trainingData1)
-        cv2.imshow("The trainingData2 image", i.trainingData2)
-        cv2.imshow("The trainingData3 image", i.trainingData3)
+    i = Input(0)
+    saveImagePath = "/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewApproachLateNight/"
+    showAndSaveImagesFlag = False  # However the classified featureplot and final classification is still showed...
 
     # Initialize the Preprocessing component with the training data1, 2, 3
-    # Doing the 3 classes classificaiotn
     p1 = Preprocessing(i.trainingData1, 1)
     p2 = Preprocessing(i.trainingData2, 2)
     p3 = Preprocessing(i.trainingData3, 3)
 
-    # Save the front ground images for documentation for the training data
-    # Only outcomment this, if we change training data.
-    if saveImages:
-        cv2.imwrite(saveImagePath + "imgFrontGround1.png", p1.imgFrontGround)
-        cv2.imwrite(saveImagePath + "imgFrontGround2.png", p2.imgFrontGround)
-        cv2.imwrite(saveImagePath + "imgFrontGround3.png", p3.imgFrontGround)
-        # Save the sprout images for documentation
-        cv2.imwrite(saveImagePath + "imgSprout1.png", p1.imgSprout)
-        cv2.imwrite(saveImagePath + "imgSprout2.png", p2.imgSprout)
-        cv2.imwrite(saveImagePath + "imgSprout3.png", p3.imgSprout)
-        # Save the seed and sprout images for documentation
-        cv2.imwrite(saveImagePath + "imgSeedAndSprout1.png", p1.imgSeedAndSprout)
-        cv2.imwrite(saveImagePath + "imgSeedAndSprout2.png", p2.imgSeedAndSprout)
-        cv2.imwrite(saveImagePath + "imgSeedAndSprout3.png", p3.imgSeedAndSprout)
-
-    # Test the preprocessing images with 3 classes
-    if showImages:
-        cv2.imshow("trainingData1 sprout image", p1.imgSeedAndSprout)
-        cv2.imshow("trainingData2 sprout image", p2.imgSeedAndSprout)
-        cv2.imshow("trainingData3 sprout image", p3.imgSeedAndSprout)
+    # Here the trainingdata for class1, class2, and class3 has been trimmed.
+    # i.e. the data that should be loaded into the segmentation component is the following images
+    # imgSproutClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgSproutClass1WithMorph.png", cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    # imgSproutClass2 = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgSproutClass2WithMorph.png", cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    # imgSproutClass3 = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgSproutClass3WithMorph.png", cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    # imgSeedAndSproutClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgSeedAndSproutClass1WithMorph.png", cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    # imgSeedAndSproutClass2 = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgSeedAndSproutClass2WithMorph.png", cv2.CV_LOAD_IMAGE_GRAYSCALE)
+    # imgSeedAndSproutClass3 = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgSeedAndSproutClass3WithMorph.png", cv2.CV_LOAD_IMAGE_GRAYSCALE)
 
     # Initializing the Segmentation component with 3 clases.
+    # Using global HSV setting
     s1 = Segmentation(i.trainingData1, p1.imgFrontGround, p1.imgSeedAndSprout, p1.imgSprout, 1)
-    s2 = Segmentation(i.trainingData2, p2.imgFrontGround, p2.imgSeedAndSprout, p2.imgSprout, 2)
-    s3 = Segmentation(i.trainingData3, p3.imgFrontGround, p3.imgSeedAndSprout, p3.imgSprout, 3)
+    s2 = Segmentation(i.trainingData2, p2.imgFrontGround, p2.imgSeedandSproutRepaired, p2.imgSproutRepaired, 2)
+    s3 = Segmentation(i.trainingData3, p3.imgFrontGround, p3.imgSeedandSproutRepaired, p3.imgSproutRepaired, 3)
 
-    # Only outcomment this, if we change training data.
-    # Save the contour images for documentation
-    if saveImages:
-        cv2.imwrite(saveImagePath + "imgContours1.png", s1.imgContours)
-        cv2.imwrite(saveImagePath + "imgContours2.png", s2.imgContours)
-        cv2.imwrite(saveImagePath + "imgContours3.png", s3.imgContours)
-        # Save the drawing of sprout bounding boxes
-        cv2.imwrite(saveImagePath + "imgDraw1.png", s1.imgDraw)
-        cv2.imwrite(saveImagePath + "imgDraw2.png", s2.imgDraw)
-        cv2.imwrite(saveImagePath + "imgDraw3.png", s3.imgDraw)
+    # Using local HSV setting, i.e. loading imgSeedAndSprout and imgSprout which has individuelly been trimmed to have better sprouts
+    # s1 = Segmentation(i.trainingData1, p1.imgFrontGround, imgSeedAndSproutClass1, imgSproutClass1, 1)
+    # s2 = Segmentation(i.trainingData2, p2.imgFrontGround, imgSeedAndSproutClass2, imgSproutClass2, 2)
+    # s3 = Segmentation(i.trainingData3, p3.imgFrontGround, imgSeedAndSproutClass3, imgSproutClass3, 3)
 
-    # Test the segmentation with 3 classes
-    if showImages:
-        cv2.imshow("TrainingData1 contours", s1.imgContours)
-        cv2.imshow("TrainingData2 contours", s2.imgContours)
-        cv2.imshow("TrainingData3 contours", s3.imgContours)
-        cv2.imshow("TrainingData1 imgDraw", s1.imgDraw)
-        cv2.imshow("TrainingData2 imgDraw", s2.imgDraw)
-        cv2.imshow("TrainingData3 imgDraw", s3.imgDraw)
+    # Choise which feature to use:
+    # featureCenterOfMassList,                   # feature 0
+    # featureLengthList,                         # feature 1
+    # featureWidthList,                          # feature 2
+    # featureRatioList,                          # feature 3
+    # featureNumberOfSproutPixelsList,           # feature 4
+    # featureHueMeanList,                        # feature 5
+    # featureHueStdList,                         # feature 6
+    # featureClassStampList                      # feature 7
+    featureIndexX = 1
+    featureIndexY = 4
 
-    # Initialize the Classification component with 3 classes
-    c = Classification(s1.featureLengthList,
-                       s1.featureNumberOfSproutPixelsList,
-                       s1.featureClassStampList,
-                       s2.featureLengthList,
-                       s2.featureNumberOfSproutPixelsList,
-                       s2.featureClassStampList,
-                       s3.featureLengthList,
-                       s3.featureNumberOfSproutPixelsList,
-                       s3.featureClassStampList,
-                       showImages)
+    # Initialize the clasification component for the training data
+    c = Classification(s1.listOfFeatures, s2.listOfFeatures, s3.listOfFeatures, featureIndexX, featureIndexY, showAndSaveImagesFlag)
 
     # Initialize the Output component
     o = Output()
@@ -117,18 +81,85 @@ def main():
     userCloseDown = False
 
     # Setting the names of different windows
-    nameOfTrackBarWindow = "Trackbar settings"
+    nameOfTrackBarWindowRGB = "Trackbar settings RGB"
+    nameOfVideoStreamWindowHSVclass1 = "Trackbar settings HSV for training data class1"
+
+    # Setting the names of different parameters in different windows
     nameOfTrackBar1 = "Start system"
     nameOfTrackBar2 = "Absolute exposure"
     nameOfTrackBar3 = "Sharpness"
     nameOfTrackBar4 = "Absolute focus"
-    nameOfVideoStreamWindow = "Trackbar settings" # I just set the trackbar and the streaming video in the same window...
+    nameOfTrackBar5 = "Hue min"
+    nameOfTrackBar6 = "Hue max"
+    nameOfTrackBar7 = "Saturation min"
+    nameOfTrackBar8 = "Saturation max"
+    nameOfTrackBar9 = "Value min"
+    nameOfTrackBar10 = "Value max"
 
-    # Add the trackbar in the trackbar window
-    i.addTrackbar(nameOfTrackBar1, nameOfTrackBarWindow, i.buttonStartSystem, 1)
-    i.addTrackbar(nameOfTrackBar2, nameOfTrackBarWindow, i.absoluteExposure, 2047)
-    i.addTrackbar(nameOfTrackBar3, nameOfTrackBarWindow, i.sharpness, 255)
-    i.addTrackbar(nameOfTrackBar4, nameOfTrackBarWindow, i.absoluteFocus, 255)
+    # Add the trackbar in the trackbar window RGB
+    i.addTrackbar(nameOfTrackBar1, nameOfTrackBarWindowRGB, i.buttonStartSystem, 1)
+    i.addTrackbar(nameOfTrackBar2, nameOfTrackBarWindowRGB, i.absoluteExposure, 2047)
+    i.addTrackbar(nameOfTrackBar3, nameOfTrackBarWindowRGB, i.sharpness, 255)
+    i.addTrackbar(nameOfTrackBar4, nameOfTrackBarWindowRGB, i.absoluteFocus, 255)
+
+    # Add the trackbar in the trackbar window HSV
+    # i.addTrackbar(nameOfTrackBar5, nameOfVideoStreamWindowHSVclass1, i.hueMin, 180)
+    # i.addTrackbar(nameOfTrackBar6, nameOfVideoStreamWindowHSVclass1, i.hueMax, 180)
+    # i.addTrackbar(nameOfTrackBar7, nameOfVideoStreamWindowHSVclass1, i.saturationMin, 255)
+    # i.addTrackbar(nameOfTrackBar8, nameOfVideoStreamWindowHSVclass1, i.saturationMax, 255)
+    # i.addTrackbar(nameOfTrackBar9, nameOfVideoStreamWindowHSVclass1, i.valueMin, 255)
+    # i.addTrackbar(nameOfTrackBar10, nameOfVideoStreamWindowHSVclass1, i.valueMax, 255)
+
+    # Save the input images for documentation
+    if showAndSaveImagesFlag:
+
+        # Show the images in the input component
+        cv2.imshow("The trainingData1 RGB image", i.trainingData1)
+        cv2.imshow("The trainingData2 RGB image", i.trainingData2)
+        cv2.imshow("The trainingData3 RGB image", i.trainingData3)
+
+        # Show the images in the preprocessing component
+        cv2.imshow("trainingData1 front ground image", p1.imgFrontGround)
+        cv2.imshow("trainingData2 front ground image", p2.imgFrontGround)
+        cv2.imshow("trainingData3 front ground image", p3.imgFrontGround)
+        cv2.imshow("trainingData1 sprout image", p1.imgSprout)
+        cv2.imshow("trainingData2 sprout image", p2.imgSprout)
+        cv2.imshow("trainingData3 sprout image", p3.imgSprout)
+        cv2.imshow("trainingData1 seed and sprout image", p1.imgSeedAndSprout)
+        cv2.imshow("trainingData2 seed and sprout image", p2.imgSeedAndSprout)
+        cv2.imshow("trainingData3 seed and sprout image", p3.imgSeedAndSprout)
+
+        # Show the images in the segmentation component
+        cv2.imshow("TrainingData1 contours", s1.imgContours)
+        cv2.imshow("TrainingData2 contours", s2.imgContours)
+        cv2.imshow("TrainingData3 contours", s3.imgContours)
+        cv2.imshow("TrainingData1 imgDraw", s1.imgDraw)
+        cv2.imshow("TrainingData2 imgDraw", s2.imgDraw)
+        cv2.imshow("TrainingData3 imgDraw", s3.imgDraw)
+
+        # Write the images in the input component
+        cv2.imwrite(saveImagePath + "trainingData1.png", i.trainingData1)
+        cv2.imwrite(saveImagePath + "trainingData2.png", i.trainingData2)
+        cv2.imwrite(saveImagePath + "trainingData3.png", i.trainingData3)
+
+        # Write the images in the preprocessing component
+        cv2.imwrite(saveImagePath + "imgFrontGround1.png", p1.imgFrontGround)
+        cv2.imwrite(saveImagePath + "imgFrontGround2.png", p2.imgFrontGround)
+        cv2.imwrite(saveImagePath + "imgFrontGround3.png", p3.imgFrontGround)
+        cv2.imwrite(saveImagePath + "imgSprout1.png", p1.imgSprout)
+        cv2.imwrite(saveImagePath + "imgSprout2.png", p2.imgSprout)
+        cv2.imwrite(saveImagePath + "imgSprout3.png", p3.imgSprout)
+        cv2.imwrite(saveImagePath + "imgSeedAndSprout1.png", p1.imgSeedAndSprout)
+        cv2.imwrite(saveImagePath + "imgSeedAndSprout2.png", p2.imgSeedAndSprout)
+        cv2.imwrite(saveImagePath + "imgSeedAndSprout3.png", p3.imgSeedAndSprout)
+
+        # Write the images in the segmentation components
+        cv2.imwrite(saveImagePath + "imgContours1.png", s1.imgContours)
+        cv2.imwrite(saveImagePath + "imgContours2.png", s2.imgContours)
+        cv2.imwrite(saveImagePath + "imgContours3.png", s3.imgContours)
+        cv2.imwrite(saveImagePath + "imgDraw1.png", s1.imgDraw)
+        cv2.imwrite(saveImagePath + "imgDraw2.png", s2.imgDraw)
+        cv2.imwrite(saveImagePath + "imgDraw3.png", s3.imgDraw)
 
     while i.cameraIsOpen:
 
@@ -139,20 +170,66 @@ def main():
             if k == 27:
                 userCloseDown = True
                 i.closeDown()
-                cv2.destroyWindow(nameOfVideoStreamWindow)
+                cv2.destroyWindow(nameOfTrackBarWindowRGB)
+                cv2.destroyWindow(nameOfVideoStreamWindowHSVclass1)
                 break
 
-            # Listen for changes for adjusting the settings
-            i.startTrackBar(nameOfTrackBar1, nameOfTrackBarWindow)
-            i.absoluteExposureTrackBar(nameOfTrackBar2, nameOfTrackBarWindow)
-            i.sharpnessTrackBar(nameOfTrackBar3, nameOfTrackBarWindow)
-            i.absoluteFocusTrackBar(nameOfTrackBar4, nameOfTrackBarWindow)
+            # Listen for changes for adjusting the settings in the trackbar setting RGB window
+            i.startTrackBar(nameOfTrackBar1, nameOfTrackBarWindowRGB)
+            i.absoluteExposureTrackBar(nameOfTrackBar2, nameOfTrackBarWindowRGB)
+            i.sharpnessTrackBar(nameOfTrackBar3, nameOfTrackBarWindowRGB)
+            i.absoluteFocusTrackBar(nameOfTrackBar4, nameOfTrackBarWindowRGB)
+
+            # Listen for changes for adjusting the settings in the trackbar setting HSV window
+            i.hueMinTrackBar(nameOfTrackBar5, nameOfVideoStreamWindowHSVclass1)
+            i.hueMaxTrackBar(nameOfTrackBar6, nameOfVideoStreamWindowHSVclass1)
+            i.saturationMinTrackBar(nameOfTrackBar7, nameOfVideoStreamWindowHSVclass1)
+            i.saturationMaxTrackBar(nameOfTrackBar8, nameOfVideoStreamWindowHSVclass1)
+            i.valueMinTrackBar(nameOfTrackBar9, nameOfVideoStreamWindowHSVclass1)
+            i.valueMaxTrackBar(nameOfTrackBar10, nameOfVideoStreamWindowHSVclass1)
+
+            ############################################################
+            # Trying to trim the training data as much as possible
+            ############################################################
+            # Using the trackbars from the trackbar setting HSV window to adjust the HSV segmented image, i.e. sprout image
+            # imgSproutClassX = i.getSprout(i.hueMin, i.hueMax, i.saturationMin, i.saturationMax, i.valueMin, i.valueMax)
+
+            # Do some morph about it... Der sker et offset i billedet,
+            # hvis jeg kalder getClosing fra Preprocessing classen,
+            # da jeg i forvejen laver dette offset fra klassen
+            # kernel = np.matrix(([[0, 1, 0], [1, 1, 1], [0, 1, 0]]), np.uint8)
+            # imgSproutClassX = cv2.dilate(imgSproutClassX, kernel, iterations=3)
+            # imgSproutClassX = cv2.erode(imgSproutClassX, kernel, iterations=3)
+            # imgSproutClassX = cv2.erode(imgSproutClassX, kernel, iterations=1)
+            # imgSproutClassX = cv2.dilate(imgSproutClassX, kernel, iterations=1)
+
+            # Adding the new sprout image to the old front ground image, since the front ground image is OK
+            # imgSeedAndSproutClassX = cv2.add(imgSproutClassX, p3.imgFrontGround)
+
+            # Get the contours
+            # contoursFrontGroundClassX = s1.getContours(p1.imgFrontGround)
+            # contoursFrontGroundFilteredClassX,a,b,c = s1.getContoursFilter(contoursFrontGroundClassX, 200, 4000)
+
+            # Use the segmentation part to get the contours, to get the boundingbox
+            # of the new imgSeedAndSprout image for class 2
+            # s3.getFeaturesFromEachROI(contoursFrontGroundFilteredClassX, imgSeedAndSproutClassX, imgSproutClassX, i.trainingData3, 3)
+            # cv2.imshow("BoundingBox image of classX", s3.imgDraw)
+
+            # Take the black/white image and convert it to color, so we can draw some green seed bounderies on it
+            # imgSproutWithBounderyClassX = cv2.cvtColor(imgSproutClassX, cv2.COLOR_GRAY2BGR)
+            # Add the drawn contour image together with the black/white image, which now can be have color on it
+            # imgSproutWithBounderyClassX = cv2.add(imgSproutWithBounderyClassX, s3.imgContours)
 
             # Then do the adjustments and call the v4l2 settings.
             i.setV4L2(i.absoluteFocus, i.absoluteExposure, i.sharpness)
 
             # Show the result afterwards.
-            cv2.imshow(nameOfVideoStreamWindow, i.getCroppedImg())
+            cv2.imshow(nameOfTrackBarWindowRGB, i.getCroppedImg())
+            # cv2.imwrite(saveImagePath + "imgRGBwith4000K.png", i.getCroppedImg())
+
+            # NOTE!!!: This window is the class1 sprout image. I.e. it is only the processed image of the training data, not the image from webcamera
+            # cv2.imshow(nameOfVideoStreamWindowHSVclass1, imgSproutWithBounderyClassX)
+
             cv2.waitKey(1) # Needs to have this, otherwise I cant see the VideoStreamingWindow with the trackbars
 
         # if user wants to close down the program, we do it..
@@ -160,10 +237,12 @@ def main():
             break
 
         # Clear the trackbar setting window, since we only want to look at the final classification image
-        cv2.destroyWindow(nameOfVideoStreamWindow)
+        cv2.destroyWindow(nameOfTrackBarWindowRGB)
+        cv2.destroyWindow(nameOfVideoStreamWindowHSVclass1)
 
         # Input from webcamera - Testing data
-        imgInput = i.getCroppedImg()
+        # imgInput = i.getCroppedImg()
+        imgInput = i.testingData # Using a still test image, when the real USB camera is not available
 
         # The input image is processed through each component as followed, with class 0, since it is unknow which class the
         # test image belogns to...
@@ -172,12 +251,13 @@ def main():
         # The FrontGround image and SeedAndSprout image is used in the segmentation component
         s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
 
-        if showImages:
+        if True:
             # Plot the featureplot for the testing data, e.i class 0
-            featureplotClass0 = PlotFigures(3, "", "")
+            featureplotClass0 = PlotFigures(3, "Feature plot for testning data class 0 \n",
+                          "with " + str(len(s.listOfFeatures[featureIndexX])) + " number of samples")
             featureplotClass0.clearFigure() # In order to have a "live" image we clear all information and plot it again
-            featureplotClass0.fig.suptitle("Testing data \n" + str(len(s.contoursFrontGroundFiltered)) + " samples", fontsize=22, fontweight='normal')
-            featureplotClass0.plotData(s.featureLengthList, s.featureNumberOfSproutPixelsList, "gs", "class 0")
+            featureplotClass0.fig.suptitle("Testing data \n" + str(len(s.listOfFeatures[featureIndexX])) + " samples", fontsize=22, fontweight='normal')
+            featureplotClass0.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 0")
             featureplotClass0.setXlabel(c.Xlabel)
             featureplotClass0.setYlabel(c.Ylabel)
             featureplotClass0.limit_x(0, c.maxX)
@@ -186,12 +266,30 @@ def main():
             featureplotClass0.updateFigure()
             featureplotClass0.saveFigure("TestingData")
 
+
+
         # Now with the featureplot of class0, we need to draw the featureplot where the class0 is going to get classified.
         # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.
         featureplotClass0Classified = PlotFigures(4, "Feature plot for classified test data", "test")
         featureplotClass0Classified.clearFigure()
+        featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
+        x = 0.4
+        y = 0.2
+        featureplotClass0.plotMean(x, y, "cs")
+        x = int(x * 1/c.h)
+        y = int(y * 1/c.h)
+        print "So at x: (", x, ") and y: (", y, ") the Z-value is:", c.Z[y-1, x-1], "\n"
+        plt.show(block=False)   # It is very big with 300 dpi
+        plt.draw()
 
+        imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        cv2.imshow("Pause program", imgPause)
+        cv2.waitKey(0)
+
+        # featureplotClass0.updateFigure()
         # Getting the featureplot with 3 classes
+        # with normalized data
+
         featureClass1ListX, \
         featureClass1ListY, \
         centerClass1List, \
@@ -200,13 +298,36 @@ def main():
         centerClass2List, \
         featureClass3ListX, \
         featureClass3ListY, \
-        centerClass3List = c.getClassifiedLists3classes(s.featureLengthList, s.featureNumberOfSproutPixelsList, s.featureCenterOfMassList, s.imgRGB)
+        centerClass3List = c.getClassifiedLists3classes(s.listOfFeatures[featureIndexX], s.listOfFeatures[featureIndexY], s.listOfFeatures[0], imgInput)
+
+        imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        cv2.imshow("Pause program", imgPause)
+        cv2.waitKey(0)
+        print "Ending program here -DEBUG"
+        return 0
+
+        # print "The output of the c.getClassfideLists3classes is:"
+        #
+        # print "featureClass1ListX is:", featureClass1ListX
+        # print "featureClass1ListY is:", featureClass1ListY
+        # print "centerClass1List is:", centerClass1List
+        #
+        # print "featureClass2ListX is:", featureClass2ListX
+        # print "featureClass2ListY is:", featureClass2ListY
+        # print "centerClass2List is:", centerClass2List
+        #
+        # print "featureClass3ListX is:", featureClass3ListX
+        # print "featureClass3ListY is:", featureClass3ListY
+        # print "centerClass3List is:", centerClass3List
 
         # # Here we plot the data that has been classified with 3 classes
+        print "And now we plot the data in figure 4"
         featureplotClass0Classified.fig.suptitle("Feature plot for classified test data \n "+ str(len(s.contoursFrontGroundFiltered)) + " samples", fontsize=22, fontweight='normal')
-        featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "bs", "class 1")
-        featureplotClass0Classified.plotData(featureClass2ListX, featureClass2ListY, "rs", "class 2")
-        featureplotClass0Classified.plotData(featureClass3ListX, featureClass3ListY, "ys", "class 3")
+        featureplotClass0Classified.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 999")
+        # featureplotClass0Classified.plotData(c.NormalizeData(featureClass1ListX), c.NormalizeData(featureClass1ListY), "bs", "class 1")
+        # featureplotClass0Classified.plotData(c.NormalizeData(featureClass2ListX), c.NormalizeData(featureClass2ListY), "rs", "class 2")
+        # featureplotClass0Classified.plotData(c.NormalizeData(featureClass3ListX), c.NormalizeData(featureClass3ListY), "ys", "class 3")
+        print "And now we plot the data in figure 4"
         featureplotClass0Classified.plotContourf(c.xx, c.yy, c.Z)
         featureplotClass0Classified.limit_x(0, c.maxX)
         featureplotClass0Classified.limit_y(0, c.maxY)
@@ -216,21 +337,27 @@ def main():
         featureplotClass0Classified.updateFigure()
         featureplotClass0Classified.saveFigure("FeaturePlotForClassifiedTestData")
 
+        imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+        cv2.imshow("Pause program", imgPause)
+        cv2.waitKey(0)
+        print "Ending program here -DEBUG"
+        return 0
+
         # Show the final result...
         cv2.imshow("Show the classified result", c.imgClassified)
 
-        if saveImages:
-            # Saving image from input component
-            cv2.imwrite(saveImagePath + "imgInput.png", imgInput)
-            # Saving image from preprocessing componet
-            cv2.imwrite(saveImagePath + "imgFrontGround0.png", p.imgFrontGround)
-            cv2.imwrite(saveImagePath + "imgSprout0.png", p.imgSprout)
-            cv2.imwrite(saveImagePath + "imgSeedAndSprout0.png", p.imgSeedAndSprout)
-            # Saving image from segmentation component
-            cv2.imwrite(saveImagePath + "imgDraw0.png", s.imgDraw)
-            cv2.imwrite(saveImagePath + "imgContours0.png", s.imgContours)
-            # Saving image from classification component
-            cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
+        # if saveImages:
+        #     # Saving image from input component
+        #     cv2.imwrite(saveImagePath + "imgInput.png", imgInput)
+        #     # Saving image from preprocessing componet
+        #     cv2.imwrite(saveImagePath + "imgFrontGround0.png", p.imgFrontGround)
+        #     cv2.imwrite(saveImagePath + "imgSprout0.png", p.imgSprout)
+        #     cv2.imwrite(saveImagePath + "imgSeedAndSprout0.png", p.imgSeedAndSprout)
+        #     # Saving image from segmentation component
+        #     cv2.imwrite(saveImagePath + "imgDraw0.png", s.imgDraw)
+        #     cv2.imwrite(saveImagePath + "imgContours0.png", s.imgContours)
+        #     # Saving image from classification component
+        #     cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
 
         # With the list of COM for good and bad seeds, the last component is used
         # Remember that the output now is in cm. Change the z value to 0.30 to get the x,y, in meters,

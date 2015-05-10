@@ -18,8 +18,20 @@ class Input(object):
         self.cap = cv2.VideoCapture(cameraIndex)
         self.cameraIsOpen = self.checkCamera()
 
+        # Hue min and max
+        self.hueMin = np.array(20, dtype=np.uint8)
+        self.hueMax = np.array(180, dtype=np.uint8)
+
+        # Saturation min and max
+        self.saturationMin = np.array(0, dtype=np.uint8)
+        self.saturationMax = np.array(95, dtype=np.uint8)
+
+        # Value min and max
+        self.valueMin = np.array(0, dtype=np.uint8)
+        self.valueMax = np.array(255, dtype=np.uint8)
+
         # Activate system bottom
-        self.buttonStartSystem = np.array(0, dtype=np.uint8)
+        self.buttonStartSystem = np.array(1, dtype=np.uint8)
 
         # Disable autofocus to begin with
         self.autoFocus = np.array(0, dtype=np.uint8)
@@ -71,6 +83,24 @@ class Input(object):
     def nothing(self, x):
         pass
 
+    def hueMinTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.hueMin = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def hueMaxTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.hueMax = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def saturationMinTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.saturationMin = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def saturationMaxTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.saturationMax = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def valueMinTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.valueMin = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
+    def valueMaxTrackBar(self, nameOfTrackbar, nameOfWindow):
+        self.valueMax = self.trackbarListener(nameOfTrackbar, nameOfWindow)
+
     def startTrackBar(self, nameOfTrackbar, nameOfWindow):
         self.buttonStartSystem = self.trackbarListener(nameOfTrackbar, nameOfWindow)
 
@@ -103,12 +133,20 @@ class Input(object):
         # imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
         # The 6/5-2015.
-        # class1 is too short, class2 is OK, class 3 is too long.
+        # class1 is too short, class2 is OK, class 3 is too long with 2700 kelvin warm white
         # However we are getting a wrong bounding box, the segmentation part needs to be optimized.
         # No more features is used. The color of the sprout is here not taking into acount, it is only the length of the real sprouts-
         imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class1RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
         imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class2RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
         imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/6_5_2015/class3RGB.png", cv2.CV_LOAD_IMAGE_COLOR)
+
+
+        # 8/5-2015
+        # class1 is too short, class2 is OK, class 3 is too long with 4000 kelvin cold white
+        # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewTrainingDataWith4000K/4000Kclass1.png", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClass2 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewTrainingDataWith4000K/4000Kclass2.png", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTrainingClass3 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewTrainingDataWith4000K/4000Kclass3.png", cv2.CV_LOAD_IMAGE_COLOR)
+
 
         # DEBUGGING!. NOTE: this function is only suppose to read two, or perhaps three training data images. Not a testing image.
         # This testing image, should come from the webcamera.
@@ -116,7 +154,8 @@ class Input(object):
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimaleDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krumDEBUG2.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-        imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/testingData.png", cv2.CV_LOAD_IMAGE_COLOR)
+        # imgTestData = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgRGBwith4000K.png", cv2.CV_LOAD_IMAGE_COLOR)
+        imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewTrainingDataWith4000K/4000Kclass0.png", cv2.CV_LOAD_IMAGE_COLOR)
         # imgTestData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/ImageCropped.png", cv2.CV_LOAD_IMAGE_COLOR)
         # return imgTrainingClass1, imgTrainingClassNeg1, imgTestData
         return imgTrainingClass1, imgTrainingClass2, imgTrainingClass3, imgTestData
@@ -126,6 +165,14 @@ class Input(object):
         self.cap.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1080)
         print "Pixel width is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)
         print "Pixel height is:", self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)
+
+    def getSprout(self, hueMin, hueMax, saturationMin, saturationMax, valueMin, valueMax):
+        img_hsv = self.getTrainingDataImages()[2].copy() # Using the class 2 image
+        img_hsv = cv2.cvtColor(img_hsv, cv2.COLOR_BGR2HSV)
+        lower_hsv = np.array([hueMin, saturationMin, valueMin], dtype=np.uint8)
+        upper_hsv = np.array([hueMax, saturationMax, valueMax], dtype=np.uint8)
+        img_sprout = cv2.inRange(img_hsv, lower_hsv, upper_hsv)
+        return img_sprout
 
     def setV4L2(self, absolutFocus, absoluteExposure, sharpness):
         # Only works for hardware that support the following "video for linux 2" settings (v4l2).
