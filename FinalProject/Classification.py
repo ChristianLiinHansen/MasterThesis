@@ -14,7 +14,8 @@ from sklearn import svm, datasets
 import matplotlib.pyplot as plt
 
 class Classification(object):
-    def __init__(self, listOfFeaturesClass1, listOfFeaturesClass2, listOfFeaturesClass3, featureIndexX, featureIndexY, vizualizeTraining):
+    def __init__(self, listOfFeaturesClass1, listOfFeaturesClass2, listOfFeaturesClass3, featureIndexX, featureIndexY, vizualizeTraining, saveImagePath, normalization):
+        self.saveImagePath = saveImagePath
         self.imgClassified = []
         self.maxX = 1
         self.maxY = 1
@@ -22,38 +23,73 @@ class Classification(object):
         self.Ylabel = self.getFeatureLabel(featureIndexY)
 
         # Load the training data from class1, class2 and class3
-        if True:
-            featureplot = PlotFigures(1, "Feature plot for training data class 1,2,3 \n",
-                                      "with respectively number of samples: " +
-                                      str(len(listOfFeaturesClass1[featureIndexX])) + "," +
-                                      str(len(listOfFeaturesClass2[featureIndexX])) + "," +
-                                      str(len(listOfFeaturesClass3[featureIndexX])))
-            # featureplot.plotData(listOfFeaturesClass1[featureIndexX], listOfFeaturesClass1[featureIndexY], "bs", "class 1")
-            # featureplot.plotData(listOfFeaturesClass2[featureIndexX], listOfFeaturesClass2[featureIndexY], "rs", "class 2")
-            # featureplot.plotData(listOfFeaturesClass3[featureIndexX], listOfFeaturesClass3[featureIndexY], "ys", "class 3")
-            featureplot.plotData(self.NormalizeData(listOfFeaturesClass1[featureIndexX]), self.NormalizeData(listOfFeaturesClass1[featureIndexY]), "bs", "class 1")
-            featureplot.plotData(self.NormalizeData(listOfFeaturesClass2[featureIndexX]), self.NormalizeData(listOfFeaturesClass2[featureIndexY]), "rs", "class 2")
-            featureplot.plotData(self.NormalizeData(listOfFeaturesClass3[featureIndexX]), self.NormalizeData(listOfFeaturesClass3[featureIndexY]), "ys", "class 3")
-            featureplot.setXlabel(self.Xlabel)
-            featureplot.setYlabel(self.Ylabel)
-            featureplot.limit_x(0, self.maxX)
-            featureplot.limit_y(0, self.maxY)
-            featureplot.addLegend()
-            featureplot.updateFigure()
-            featureplot.saveFigure("FeaturePlotForTrainingData")
+        if normalization:
 
-        # Convert the data into a format that is suitable for the SVM with 3 classes NORMALIZED
-        class1X, class1y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass1[featureIndexX]),
+            # Convert the data into a format that is suitable for the SVM with 3 classes NORMALIZED
+            class1X, class1y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass1[featureIndexX]),
                                                        self.NormalizeData(listOfFeaturesClass1[featureIndexY]),
                                                        listOfFeaturesClass1[7])
 
-        class2X, class2y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass2[featureIndexX]),
+            class2X, class2y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass2[featureIndexX]),
                                                self.NormalizeData(listOfFeaturesClass2[featureIndexY]),
                                                listOfFeaturesClass2[7])
 
-        class3X, class3y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass3[featureIndexX]),
+            class3X, class3y = self.convertDataToSVMFormat3classes(self.NormalizeData(listOfFeaturesClass3[featureIndexX]),
                                                self.NormalizeData(listOfFeaturesClass3[featureIndexY]),
                                                listOfFeaturesClass3[7])
+        else:
+            # Convert the data into a format that is suitable for the SVM with 3 classes NOT NORMALIZED
+            class1X, class1y = self.convertDataToSVMFormat3classes(listOfFeaturesClass1[featureIndexX],
+                                                   listOfFeaturesClass1[featureIndexY],
+                                                   listOfFeaturesClass1[7])
+
+            class2X, class2y = self.convertDataToSVMFormat3classes(listOfFeaturesClass2[featureIndexX],
+                                           listOfFeaturesClass2[featureIndexY],
+                                           listOfFeaturesClass2[7])
+
+            class3X, class3y = self.convertDataToSVMFormat3classes(listOfFeaturesClass3[featureIndexX],
+                                           listOfFeaturesClass3[featureIndexY],
+                                           listOfFeaturesClass3[7])
+        if vizualizeTraining:
+            if normalization:
+                featureplot = PlotFigures(1, "Feature plot for training data class 1,2,3 \n",
+                                          "with respectively number of samples: " +
+                                          str(len(listOfFeaturesClass1[featureIndexX])) + "," +
+                                          str(len(listOfFeaturesClass2[featureIndexX])) + "," +
+                                          str(len(listOfFeaturesClass3[featureIndexX])), saveImagePath)
+
+                # featureplot.plotData(listOfFeaturesClass1[featureIndexX], listOfFeaturesClass1[featureIndexY], "bs", "class 1")
+                # featureplot.plotData(listOfFeaturesClass2[featureIndexX], listOfFeaturesClass2[featureIndexY], "rs", "class 2")
+                # featureplot.plotData(listOfFeaturesClass3[featureIndexX], listOfFeaturesClass3[featureIndexY], "ys", "class 3")
+                featureplot.plotData(self.NormalizeData(listOfFeaturesClass1[featureIndexX]), self.NormalizeData(listOfFeaturesClass1[featureIndexY]), "bs", "class 1")
+                featureplot.plotData(self.NormalizeData(listOfFeaturesClass2[featureIndexX]), self.NormalizeData(listOfFeaturesClass2[featureIndexY]), "rs", "class 2")
+                featureplot.plotData(self.NormalizeData(listOfFeaturesClass3[featureIndexX]), self.NormalizeData(listOfFeaturesClass3[featureIndexY]), "ys", "class 3")
+                featureplot.setXlabel(self.Xlabel)
+                featureplot.setYlabel(self.Ylabel)
+                featureplot.limit_x(0, self.maxX)
+                featureplot.limit_y(0, self.maxY)
+                featureplot.addLegend()
+                featureplot.updateFigure()
+                featureplot.saveFigure("FeaturePlotForTrainingDataNormalized")
+            else:
+                featureplot = PlotFigures(1, "Feature plot for training data class 1,2,3 \n",
+                                          "with respectively number of samples: " +
+                                          str(len(listOfFeaturesClass1[featureIndexX])) + "," +
+                                          str(len(listOfFeaturesClass2[featureIndexX])) + "," +
+                                          str(len(listOfFeaturesClass3[featureIndexX])), saveImagePath)
+                featureplot.plotData(listOfFeaturesClass1[featureIndexX], listOfFeaturesClass1[featureIndexY], "bs", "class 1")
+                featureplot.plotData(listOfFeaturesClass2[featureIndexX], listOfFeaturesClass2[featureIndexY], "rs", "class 2")
+                featureplot.plotData(listOfFeaturesClass3[featureIndexX], listOfFeaturesClass3[featureIndexY], "ys", "class 3")
+                # featureplot.plotData(self.NormalizeData(listOfFeaturesClass1[featureIndexX]), self.NormalizeData(listOfFeaturesClass1[featureIndexY]), "bs", "class 1")
+                # featureplot.plotData(self.NormalizeData(listOfFeaturesClass2[featureIndexX]), self.NormalizeData(listOfFeaturesClass2[featureIndexY]), "rs", "class 2")
+                # featureplot.plotData(self.NormalizeData(listOfFeaturesClass3[featureIndexX]), self.NormalizeData(listOfFeaturesClass3[featureIndexY]), "ys", "class 3")
+                featureplot.setXlabel(self.Xlabel)
+                featureplot.setYlabel(self.Ylabel)
+                # featureplot.limit_x(0, self.maxX)
+                # featureplot.limit_y(0, self.maxY)
+                featureplot.addLegend()
+                featureplot.updateFigure()
+                featureplot.saveFigure("FeaturePlotForTrainingDataNotNormalized")
 
         # Here we stack the normalized data, i.e. the SVM runs on normalized data
         X, y = self.stackData3classes(class1X, class2X, class3X, class1y, class2y, class3y)
@@ -62,25 +98,41 @@ class Classification(object):
         C = 1
         # Step size in the mesh
         self.h = 0.001
-        self.xx, self.yy, self.Z, kernel, gamma = self.runSVM(X, y, C, self.h)
+        self.xx, self.yy, self.Z, kernel, gamma = self.runSVM(X, y, C, self.h, normalization)
 
         # Visuzalize with 3 classes
-        if True:
-            svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C))
+        if vizualizeTraining:
+            if normalization:
+                svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C), saveImagePath)
+                svmPlot.plotContourf(self.xx, self.yy, self.Z)
+                # Plot also the training points
+                svmPlot.plotData(self.NormalizeData(listOfFeaturesClass1[featureIndexX]), self.NormalizeData(listOfFeaturesClass1[featureIndexY]), "bs", "class 1")
+                svmPlot.plotData(self.NormalizeData(listOfFeaturesClass2[featureIndexX]), self.NormalizeData(listOfFeaturesClass2[featureIndexY]), "rs", "class 2")
+                svmPlot.plotData(self.NormalizeData(listOfFeaturesClass3[featureIndexX]), self.NormalizeData(listOfFeaturesClass3[featureIndexY]), "ys", "class 3")
+                svmPlot.setXlabel(self.Xlabel)
+                svmPlot.setYlabel(self.Ylabel)
+                svmPlot.limit_x(0, self.maxX)
+                svmPlot.limit_y(0, self.maxY)
+                # svmPlot.setTitle("SVM classification with training using a linear kernel")
+                svmPlot.addLegend()
+                svmPlot.updateFigure()
+                svmPlot.saveFigure("FeaturePlotForTrainingDataWithBounderyNormalized")
+            else:
+                svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C), saveImagePath)
+                svmPlot.plotContourf(self.xx, self.yy, self.Z)
+                # Plot also the training points
+                svmPlot.plotData(listOfFeaturesClass1[featureIndexX], listOfFeaturesClass1[featureIndexY], "bs", "class 1")
+                svmPlot.plotData(listOfFeaturesClass2[featureIndexX], listOfFeaturesClass2[featureIndexY], "rs", "class 2")
+                svmPlot.plotData(listOfFeaturesClass3[featureIndexX], listOfFeaturesClass3[featureIndexY], "ys", "class 3")
+                svmPlot.setXlabel(self.Xlabel)
+                svmPlot.setYlabel(self.Ylabel)
+                # svmPlot.limit_x(0, self.maxX)
+                # svmPlot.limit_y(0, self.maxY)
+                # svmPlot.setTitle("SVM classification with training using a linear kernel")
+                svmPlot.addLegend()
+                svmPlot.updateFigure()
+                svmPlot.saveFigure("FeaturePlotForTrainingDataWithBounderyNotNormalized")
 
-            svmPlot.plotContourf(self.xx, self.yy, self.Z)
-            # Plot also the training points
-            svmPlot.plotData(self.NormalizeData(listOfFeaturesClass1[featureIndexX]), self.NormalizeData(listOfFeaturesClass1[featureIndexY]), "bs", "class 1")
-            svmPlot.plotData(self.NormalizeData(listOfFeaturesClass2[featureIndexX]), self.NormalizeData(listOfFeaturesClass2[featureIndexY]), "rs", "class 2")
-            svmPlot.plotData(self.NormalizeData(listOfFeaturesClass3[featureIndexX]), self.NormalizeData(listOfFeaturesClass3[featureIndexY]), "ys", "class 3")
-            svmPlot.setXlabel(self.Xlabel)
-            svmPlot.setYlabel(self.Ylabel)
-            svmPlot.limit_x(0, self.maxX)
-            svmPlot.limit_y(0, self.maxY)
-            # svmPlot.setTitle("SVM classification with training using a linear kernel")
-            svmPlot.addLegend()
-            svmPlot.updateFigure()
-            svmPlot.saveFigure("FeaturePlotForTrainingDataWithBoundery")
         print "Finish with the supervised learning...\n"
 
     def NormalizeData(self, featureList):
@@ -201,25 +253,31 @@ class Classification(object):
                featureClass3ListY, \
                centerClass3List
 
-    def runSVM(self, X, y, C, h):
+    def runSVM(self, X, y, C, h, normalization):
 
         print "Initializing the SVM..."
-        kernel = 'rbf'
-        # Intial gamma was 0.7
         gamma = 0.8
+
+        if normalization:
+            kernel = 'rbf'
+            svc = svm.SVC(kernel=kernel, C=C).fit(X, y)
+            xx, yy = np.meshgrid(np.arange(0, 1, h), np.arange(0, 1, h))
+        else:
+            # Intial gamma was 0.7
+            kernel = 'linear'
+            svc = svm.SVC(kernel=kernel, gamma=gamma, C=C).fit(X, y)
+            x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+            y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+            xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1))
+
         # kernel = 'linear'
         # kernel = 'poly'
-
-        # svc = svm.SVC(kernel=kernel, C=C).fit(X, y)
-        svc = svm.SVC(kernel=kernel, gamma=gamma, C=C).fit(X, y)
         # svc = svm.SVC(kernel=kernel, degree=2, C=C).fit(X, y)
         # svc = svm.LinearSVC(C=C).fit(X, y)
 
         # Starting the SVM...
         print "Starting the SVM..."
 
-        # Create a mesh to plot in
-        xx, yy = np.meshgrid(np.arange(0, 1, h), np.arange(0, 1, h))
         Z = svc.predict(np.c_[xx.ravel(), yy.ravel()])
 
         # Put the result into a color plot

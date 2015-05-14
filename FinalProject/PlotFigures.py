@@ -13,7 +13,8 @@ import matplotlib.patches as mpatches
 from pylab import *
 
 class PlotFigures(object):
-    def __init__(self, figNumb, figTitle, lowerTitle):
+    def __init__(self, figNumb, figTitle, lowerTitle, saveImagePath):
+        self.saveImagePath = saveImagePath
         self.figTitle = figTitle
         self.lowerTitle = lowerTitle
 
@@ -100,4 +101,4 @@ class PlotFigures(object):
 
     def saveFigure(self, fileName):
         # plt.annotate('Removed datapoint', xy=(0.33, 0.43), xytext=(0.6, 0.5), arrowprops=dict(facecolor='black', shrink=0.005))
-        plt.savefig("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(fileName) + ".png")
+        plt.savefig(self.saveImagePath + str(fileName) + ".png")

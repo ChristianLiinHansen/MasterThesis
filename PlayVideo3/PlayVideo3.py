@@ -38,6 +38,11 @@ class CameraDriver:
         # Active settings bottom
         self.adjustingSettings = np.array(0, dtype=np.uint8)
 
+        # Active RGB tackbars in procent
+        self.rTrackbar = np.array(100, dtype=np.uint8)
+        self.gTrackbar = np.array(100, dtype=np.uint8)
+        self.bTrackbar = np.array(100, dtype=np.uint8)
+
         # Horizontal cropping lines
         self.horizontalLines = np.array(100, dtype=np.uint16)
 
@@ -93,14 +98,50 @@ class CameraDriver:
         # Set the sharpness
         os.system('v4l2-ctl -d ' + str(self.cameraIndex) + ' -c sharpness=' + str(sharpness))
 
-    #
-
     def getImg(self):
         if self.cap.isOpened():
             ret, img = self.cap.read()
             return img
         else:
             print 'Cant open video at cameraindex:', self.cameraIndex
+
+    def getRGBchannels(self, inputImg, rTrackBar, gTrackBar, bTrackBar):
+
+        # In OpenCV the channels are defied as img[:,:,0] = blue, img[:,:,1] = green, img[:,:,2] = red
+        # print "Get the type of inputImg:", inputImg.dtype
+        # Get a copy but store the dtype as int16
+
+        # imgRed = np.array(inputImg.copy(), dtype = np.int16)
+        # imgGreen = np.array(inputImg.copy(), dtype = np.int16)
+        # imgBlue = np.array(inputImg.copy(), dtype = np.int16)
+        # print "Get the type of imgRed:", imgRed.dtype
+        # print "Get the shape of imgRed:", imgRed.shape
+
+        imgRed = inputImg.copy()
+        imgGreen = inputImg.copy()
+        imgBlue = inputImg.copy()
+
+        # Get the red channel only, by setting zeropad the green and blue channel
+        imgRed[:, :, 0] = 0     # Zeropad blue channel
+        imgRed[:, :, 1] = 0     # Zeropad green channel
+        imgRed[:, :, 2] = imgRed[:, :, 2]*(float(rTrackBar))/100
+
+        # Make a overflow check. Like if any pixels is above 255 in intensity value, the intensity value must be fixed to 255.
+        # This is an extra functionallity. I dont spend the time on this now...
+        colRed = imgRed.shape[0]    # 1920 in size, so this is our x axis
+        rowRed = imgRed.shape[1]    # 1080 in size, so this is our y axis
+
+        # Get the green channel only, by setting zeropad the red and blue channel
+        imgGreen[:, :, 0] = 0   # Zeropad blue channel
+        imgGreen[:, :, 1] = imgGreen[:, :, 1]*(float(gTrackBar))/100
+        imgGreen[:, :, 2] = 0   # Zeropad red channel
+
+        # Get the blue channel only, by setting zeropad the red and green channel
+        imgBlue[:, :, 0] = imgBlue[:, :, 0]*(float(bTrackBar))/100
+        imgBlue[:, :, 1] = 0    # Zeropad green channel
+        imgBlue[:, :, 2] = 0    # Zeropad red channel
+
+        return imgRed, imgGreen, imgBlue
 
     def showImg(self, nameOfWindow, image, scale):
         imgCopy = image.copy()
@@ -110,6 +151,15 @@ class CameraDriver:
     def scaleImg(self, image, scale):
         img_scale = cv2.resize(image, (0, 0), fx=scale, fy=scale)
         return img_scale
+
+    def rTrackBar(self, nameOfWindow):
+        self.rTrackbar = self.trackbarListener("R", nameOfWindow)
+
+    def gTrackBar(self, nameOfWindow):
+        self.gTrackbar = self.trackbarListener("G", nameOfWindow)
+
+    def bTrackBar(self, nameOfWindow):
+        self.bTrackbar = self.trackbarListener("B", nameOfWindow)
 
     def absolutFocusTrackBar(self, nameOfWindow):
         self.absoluteFocus = self.trackbarListener("Absolute focus", nameOfWindow)
@@ -186,13 +236,16 @@ def main():
     cd.addTrackbar("Absolute exposure", nameOfTrackBarWindow, cd.absoluteExposure, 2047)
     cd.addTrackbar("Horizontal crop", nameOfTrackBarWindow, cd.horizontalLines, int(cd.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)/6))
     cd.addTrackbar("Vertical crop", nameOfTrackBarWindow, cd.verticalLines, int(cd.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)/2))
+    # RGB trackbars
+    cd.addTrackbar("R", nameOfTrackBarWindow, cd.rTrackbar, 100)
+    cd.addTrackbar("G", nameOfTrackBarWindow, cd.gTrackbar, 100)
+    cd.addTrackbar("B", nameOfTrackBarWindow, cd.bTrackbar, 100)
 
     # Let the program run, until the user push ECS
     while True:
 
         # Listen for changes for adjusting the settings
         cd.adjustingSettingsTrackBar(nameOfTrackBarWindow)
-
 
         # Get an image from the camera
         image = cd.getImg()
@@ -210,11 +263,22 @@ def main():
             cd.absolutFocusTrackBar(nameOfTrackBarWindow)
             cd.absoluteExposureTrackBar(nameOfTrackBarWindow)
             cd.sharpnessTrackBar(nameOfTrackBarWindow)
+            cd.rTrackBar(nameOfTrackBarWindow)
+            cd.gTrackBar(nameOfTrackBarWindow)
+            cd.bTrackBar(nameOfTrackBarWindow)
+
+            R, G, B = cd.getRGBchannels(image, cd.rTrackbar, cd.gTrackbar, cd.bTrackbar)
+            # cv2.imshow("The red channel is:", R)
+            # cv2.imshow("The green channel is:", G)
+            # cv2.imshow("The blue channel is:", B)
+            # And now add the R,G,B image together to get the coloradjusted RGB image
+            RGB = R + G + B
             cd.setSettings(cd.absoluteFocus, cd.sharpness, cd.absoluteExposure)
-            imgDraw = cd.drawCroppingLines(image)
-            croppedImg = cd.getCroppedImg(image, cd.verticalLines, cd.horizontalLines)
+            imgDraw = cd.drawCroppingLines(RGB)
+            croppedImg = cd.getCroppedImg(RGB, cd.verticalLines, cd.horizontalLines)
             cd.showImg(nameOfVideoStreamWindow, imgDraw, image_show_ratio)
             cd.showImg(nameOfVideoStreamWindowCropped, croppedImg, image_show_ratio)
+
             adjustSettings = True
 
         # Else the adjustingSetting bottom is OFF.

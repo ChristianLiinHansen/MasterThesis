@@ -9,10 +9,13 @@ Created on 1/4-2015
 import numpy as np
 import cv2
 import random
-
 class Segmentation(object):
 
-    def __init__(self, imgRGB, imgFrontGround, imgSeedAndSprout, imgSprout, classStamp):
+    def __init__(self, imgRGB, imgFrontGround, imgSeedAndSprout, imgSprout, classStamp, saveImagePath):
+        self.saveImagePath = saveImagePath
+
+        # Initialize the Main class, to use the saveImagePath string
+
         # Debug: Get the RGB input image over in this class to draw contours on the real image etc.
         self.imgRGB = imgRGB
 
@@ -78,7 +81,7 @@ class Segmentation(object):
         self.featureWidthList, \
         self.featureRatioList, \
         self.featureClassStampList \
-            = self.getFeaturesFromEachROI(self.contoursFrontGroundFiltered, imgSeedAndSprout, imgSprout, imgRGB, classStamp)
+            = self.getFeaturesFromEachROI(self.contoursFrontGroundFiltered, imgFrontGround, imgSeedAndSprout, imgSprout, imgRGB, classStamp)
 
         self.listOfFeatures = [self.featureCenterOfMassList,                 # feature 0
                         self.featureLengthList,                         # feature 1
@@ -90,7 +93,7 @@ class Segmentation(object):
                         self.featureClassStampList]                      # feature 7
 
     def saveImg(self, nameOfImg, img):
-        cv2.imwrite("/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/" + str(nameOfImg) + ".png", img)
+        cv2.imwrite(self.saveImagePath + str(nameOfImg) + ".png", img)
 
     def getLongestList(self, list1, list2):
         if len(list1) > len(list2):
@@ -245,8 +248,14 @@ class Segmentation(object):
         center = (int(m['m01'] / m['m00']), int(m['m10'] / m['m00']))
         return center
 
-    def getFeaturesFromEachROI(self, contours, imgSeedAndSprout, imgSprout, imgRGB, classStamp):
+    def getFeaturesFromEachROI(self, contours, imgFrontGround, imgSeedAndSprout, imgSprout, imgRGB, classStamp):
         # Define the list of values for all the contours for each element.
+
+        print "Now we are inside getFeatureFromEachROI"
+        cv2.imshow("The imgSeedAndSprout image", imgSeedAndSprout)
+        cv2.imshow("The imgSprout image", imgSprout)
+        cv2.imshow("The imgRGB image", imgRGB)
+
         centerOfMassList = []
         hueMeanList = []
         hueStdList = []
@@ -264,12 +273,18 @@ class Segmentation(object):
 
         print "Number of tracked object is:", len(contours), "for class:", classStamp
 
+        imgCropCounter = 0
         for contour in contours:
+            imgCropCounter = imgCropCounter + 1
+            # Here we get the x,y,widht and height of the non-oriented bounding box.
             x, y, width, height = cv2.boundingRect(contour)
             # p1 = (x, y)
             # p2 = (x+width, y)
             # p3 = (x+width, y+height)
             # p4 = (x, y+height)
+
+            # A problem here is that if an other sprout from another object is within the ROI, that is examinated,
+            # then
 
             # Get the center of mass for each contour from the imgFrontGround
             contourCOM = self.getCentroidOfSingleContour(contour)
@@ -287,8 +302,26 @@ class Segmentation(object):
             # indexCounter = indexCounter + 1
 
             # Crop out each boundingbox
-            imgBBcropped = imgSeedAndSprout[y:y+height, x:x+width]
-            imgBBcroppedSprout = imgSprout[y:y+height, x:x+width]
+            imgFrontGroundBBcropped = imgFrontGround[y:y+height, x:x+width]
+            imgSeedAndSproutBBcropped = imgSeedAndSprout[y:y+height, x:x+width]
+
+            # Examinating each ROI that is cropped out
+            # cv2.imshow("Show the front ground ROI that was cropped out", imgFrontGroundBBcropped)
+            # cv2.imshow("Show the seed and sprout ROI that was cropped out", imgSeedAndSproutBBcropped)
+
+            # Get the number of contours without childrend.
+            imgFrontGroundBBcroppedForFindContours = imgFrontGroundBBcropped.copy()
+            frontGroundBlobs, hierarchy = cv2.findContours(imgFrontGroundBBcroppedForFindContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            numberOffrontGroundBlobs = len(frontGroundBlobs)
+
+            # if numberOffrontGroundBlobs >= 2:
+            #     print "Hey this front ground ROI has more than 2 blobs"
+            #     cv2.imshow("Show the front ground ROI that was cropped out", imgFrontGroundBBcropped)
+            #     cv2.waitKey(0)
+
+            # cv2.imwrite(self.saveImagePath + "imgFrontGroundBBcropped" + str(imgCropCounter) + ".png", imgFrontGroundBBcropped)
+
+            imgSproutBBcropped = imgSprout[y:y+height, x:x+width]
             # imgBBcroppedRGB = imgRGB[y:y+height, x:x+width]
 
             # cv2.imshow("Show the imgBBcropped", imgBBcropped)
@@ -303,7 +336,7 @@ class Segmentation(object):
             # List with sprout pixels
             sprout = []
 
-            for row in imgBBcropped:
+            for row in imgSeedAndSproutBBcropped:
                 for pixel in row:
                     if pixel == 255:
                         # print "Hey we found a white pixel at this location: (", colCounter, ",", rowCounter, ")"
@@ -327,7 +360,7 @@ class Segmentation(object):
                 # Here we insert the check to see if the sprout are clustered together in one cluster or we have a main cluster with additionally noice blobs
                 # In order to check how many clusters there is, the connect component is used, which is implemented in the findContours function
                 # From here, the length of contours tells how many conected component there is in the image.
-                imgBBcroppedSproutForFindContours = imgBBcroppedSprout.copy()
+                imgBBcroppedSproutForFindContours = imgSproutBBcropped.copy()
                 blobs, hierarchy = cv2.findContours(imgBBcroppedSproutForFindContours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 # print "So the number of blobs in this contour is:", len(blobs)
                 # cv2.imshow("Show the imgBBcroppedSprout", imgBBcroppedSprout)

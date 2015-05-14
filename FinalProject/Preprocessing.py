@@ -15,26 +15,26 @@ HSVtrackBar = False
 
 class Preprocessing(object):
 
-    def __init__(self, imgInput, classStamp):
+    def __init__(self, imgInput, classStamp, saveImagePath):
         self.imgInput = imgInput
         self.classStamp = classStamp
-        self.path = "/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/8_5_2015/NewApproachLateNight/"
+        self.saveImagePath = saveImagePath
 
         #################################################
         # Front ground image
         #################################################
         # cv2.imshow("The input RGB image class"+str(self.classStamp), imgInput)
-        # cv2.imwrite(self.path + "imgInputClass"+str(self.classStamp)+".png", imgInput)
+        # cv2.imwrite(self.saveImagePath + "imgInputClass"+str(self.classStamp)+".png", imgInput)
 
         # Convert the input image to binary image and use morphology to repair the binary image.
         # This is the front ground image.
         self.imgFrontGround = self.getFrontGround(imgInput.copy())
         # cv2.imshow("The imgFrontGround image before any morph class"+str(self.classStamp), self.imgFrontGround)
-        # cv2.imwrite(self.path + "imgFrontGroundBeforeMorphClass"+str(self.classStamp)+".png", self.imgFrontGround)
+        # cv2.imwrite(self.saveImagePath + "imgFrontGroundBeforeMorphClass"+str(self.classStamp)+".png", self.imgFrontGround)
 
         self.imgFrontGround = self.getClosing(self.imgFrontGround, iterations_erode=1, iterations_dilate=1, kernelSize=3, kernelShape=0)
         # cv2.imshow("The imgFrontGround image after 1 x closing class"+str(self.classStamp), self.imgFrontGround)
-        # cv2.imwrite(self.path + "imgFrontGroundAfter1xClosingClass"+str(self.classStamp)+".png", self.imgFrontGround)
+        # cv2.imwrite(self.saveImagePath + "imgFrontGroundAfter1xClosingClass"+str(self.classStamp)+".png", self.imgFrontGround)
 
         #################################################
         # Sprout image
@@ -84,23 +84,23 @@ class Preprocessing(object):
             self.imgSprout = self.getSproutImg(imgInput.copy(), lower_hsv, upper_hsv)
             # Show and write the imgSprout before morph
             # cv2.imshow("The imgSprout before morph class"+str(self.classStamp), self.imgSprout)
-            # cv2.imwrite(self.path + "imgSproutBeforeMorph"+str(self.classStamp)+".png", self.imgSprout)
+            # cv2.imwrite(self.saveImagePath + "imgSproutBeforeMorph"+str(self.classStamp)+".png", self.imgSprout)
 
         # Show and write the imgSeedAndSprout before morph
         # img_seed_and_sprout = cv2.add(self.imgFrontGround, self.imgSprout)
         # cv2.imshow("Seed and sprout image before morph class"+str(self.classStamp), img_seed_and_sprout)
-        # cv2.imwrite(self.path + "imgSeedandSproutBeforeMorphClass"+str(self.classStamp)+".png", img_seed_and_sprout)
+        # cv2.imwrite(self.saveImagePath + "imgSeedandSproutBeforeMorphClass"+str(self.classStamp)+".png", img_seed_and_sprout)
 
         # Show and write the imgSprout after morph
         self.imgSprout = self.getOpening(self.imgSprout, iterations_erode=1, iterations_dilate=1, kernelSize=3, kernelShape=0)
         # cv2.imshow("The imgSprout after morph class"+str(self.classStamp), self.imgSprout)
-        # cv2.imwrite(self.path + "imgSproutAfterMorph"+str(self.classStamp)+".png", self.imgSprout)
+        # cv2.imwrite(self.saveImagePath + "imgSproutAfterMorph"+str(self.classStamp)+".png", self.imgSprout)
 
         # Add the front ground image and the sprout image in order to get the SeedAndSprout image.
         # Show and write the imgSeedAndSprout after morph
         self.imgSeedAndSprout = cv2.add(self.imgFrontGround, self.imgSprout)
         # cv2.imshow("Seed and sprout image after morph class"+str(self.classStamp), self.imgSeedAndSprout)
-        # cv2.imwrite(self.path + "imgSeedandSproutAfter1xOpeningClass"+str(self.classStamp)+".png", self.imgSeedAndSprout)
+        # cv2.imwrite(self.saveImagePath + "imgSeedandSproutAfter1xOpeningClass"+str(self.classStamp)+".png", self.imgSeedAndSprout)
 
         # Finally try to connect the blobs in the sprout area by dilate and use a AND operater
         # So take the sprout image and dilate in order to connect the broken sprout together, but
@@ -111,7 +111,7 @@ class Preprocessing(object):
             kernel = np.matrix(([[0, 1, 0], [1, 1, 1], [0, 1, 0]]), np.uint8)
 
             # First dilate to build the bridge
-            imgSproutMorph = cv2.dilate(self.imgSprout, kernel, iterations=3)
+            imgSproutMorph = cv2.dilate(self.imgSprout, kernel, iterations=4)
             # Then erode after
             # imgSproutMorph = cv2.erode(imgSproutMorph, kernel, iterations=2)
 
@@ -156,9 +156,9 @@ class Preprocessing(object):
     ##################################################################################
 
     def SaveImages(self):
-        cv2.imwrite(self.path + "imgInputClass"+str(self.classStamp)+".png", self.imgInput)
-        cv2.imwrite(self.path + "imgFrontGroundClass"+str(self.classStamp)+".png", self.imgFrontGround)
-        cv2.imwrite(self.path + "imgSproutClass"+str(self.classStamp)+".png", self.imgSprout)
+        cv2.imwrite(self.saveImagePath + "imgInputClass"+str(self.classStamp)+".png", self.imgInput)
+        cv2.imwrite(self.saveImagePath + "imgFrontGroundClass"+str(self.classStamp)+".png", self.imgFrontGround)
+        cv2.imwrite(self.saveImagePath + "imgSproutClass"+str(self.classStamp)+".png", self.imgSprout)
 
     def getFrontGround(self, imgRGB):
         #Do the grayscale converting
@@ -195,7 +195,7 @@ class Preprocessing(object):
         # plt.hist(img_gray.flatten(), 256)
         # self.ax.annotate("Otsu's global threshold = "+str(int(OtsuOptimalThreshold)), xy=(OtsuOptimalThreshold, 5000), xytext=(OtsuOptimalThreshold, 20000),
         #     arrowprops=dict(facecolor='black', shrink=0.001))
-        # plt.savefig(self.path + "HistogramOtsuClass"+str(self.classStamp)+".png")
+        # plt.savefig(self.saveImagePath + "HistogramOtsuClass"+str(self.classStamp)+".png")
         # plt.show()
 
         return img_binary

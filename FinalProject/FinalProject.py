@@ -13,7 +13,6 @@ from PlotFigures import PlotFigures
 from Normalize import NormalizeFeature
 from pylab import *
 
-
 def main():
 
     ######################################################################
@@ -27,14 +26,14 @@ def main():
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
     i = Input(0)
-    # saveImagePath = "/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/TestingInRoboLab/10_5_2015/"
-    saveImagePath = "/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/"
     showAndSaveImagesFlag = False  # However the classified featureplot and final classification is still showed...
+    normalization = True # Showing normalization data
+    saveImagePath = "/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/"
 
     # Initialize the Preprocessing component with the training data1, 2, 3
-    p1 = Preprocessing(i.trainingData1, 1)
-    p2 = Preprocessing(i.trainingData2, 2)
-    p3 = Preprocessing(i.trainingData3, 3)
+    p1 = Preprocessing(i.trainingData1, 1, saveImagePath)
+    p2 = Preprocessing(i.trainingData2, 2, saveImagePath)
+    p3 = Preprocessing(i.trainingData3, 3, saveImagePath)
 
     # Here the trainingdata for class1, class2, and class3 has been trimmed.
     # i.e. the data that should be loaded into the segmentation component is the following images
@@ -47,9 +46,9 @@ def main():
 
     # Initializing the Segmentation component with 3 clases.
     # Using global HSV setting
-    s1 = Segmentation(i.trainingData1, p1.imgFrontGround, p1.imgSeedAndSprout, p1.imgSprout, 1)
-    s2 = Segmentation(i.trainingData2, p2.imgFrontGround, p2.imgSeedandSproutRepaired, p2.imgSproutRepaired, 2)
-    s3 = Segmentation(i.trainingData3, p3.imgFrontGround, p3.imgSeedandSproutRepaired, p3.imgSproutRepaired, 3)
+    s1 = Segmentation(i.trainingData1, p1.imgFrontGround, p1.imgSeedAndSprout, p1.imgSprout, 1, saveImagePath)
+    s2 = Segmentation(i.trainingData2, p2.imgFrontGround, p2.imgSeedandSproutRepaired, p2.imgSproutRepaired, 2, saveImagePath)
+    s3 = Segmentation(i.trainingData3, p3.imgFrontGround, p3.imgSeedandSproutRepaired, p3.imgSproutRepaired, 3, saveImagePath)
 
     # Using local HSV setting, i.e. loading imgSeedAndSprout and imgSprout which has individuelly been trimmed to have better sprouts
     # s1 = Segmentation(i.trainingData1, p1.imgFrontGround, imgSeedAndSproutClass1, imgSproutClass1, 1)
@@ -69,7 +68,7 @@ def main():
     featureIndexY = 4
 
     # Initialize the clasification component for the training data
-    c = Classification(s1.listOfFeatures, s2.listOfFeatures, s3.listOfFeatures, featureIndexX, featureIndexY, showAndSaveImagesFlag)
+    c = Classification(s1.listOfFeatures, s2.listOfFeatures, s3.listOfFeatures, featureIndexX, featureIndexY, showAndSaveImagesFlag, saveImagePath, normalization)
 
     # Initialize the Output component
     o = Output()
@@ -113,7 +112,7 @@ def main():
 
     # Save the input images for documentation
     if showAndSaveImagesFlag:
-
+        print "The showAndSaveImagesFlag is true"
         # Show the images in the input component
         cv2.imshow("The trainingData1 RGB image", i.trainingData1)
         cv2.imshow("The trainingData2 RGB image", i.trainingData2)
@@ -163,7 +162,7 @@ def main():
         cv2.imwrite(saveImagePath + "imgDraw3.png", s3.imgDraw)
 
     while i.cameraIsOpen:
-
+        print "Camera is open..."
         # If the user has not pushed the start button.
         while not i.buttonStartSystem:
             # If the user push "ESC" the program close down.
@@ -247,14 +246,15 @@ def main():
 
         # The input image is processed through each component as followed, with class 0, since it is unknow which class the
         # test image belogns to...
-        p = Preprocessing(imgInput, 0)
+        p = Preprocessing(imgInput, 0, saveImagePath)
 
         # The FrontGround image and SeedAndSprout image is used in the segmentation component
-        s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
+        # s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
+        s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedandSproutRepaired, p.imgSproutRepaired, 0, saveImagePath)
 
-        if True:
+        if False:
             # Plot the featureplot for the testing data, e.i class 0
-            featureplotClass0 = PlotFigures(3, "Feature plot for testing data class 0 with" + str(len(s.listOfFeatures[featureIndexX])) + " samples", "")
+            featureplotClass0 = PlotFigures(3, "Feature plot for testing data class 0 with" + str(len(s.listOfFeatures[featureIndexX])) + " samples", "", saveImagePath)
             featureplotClass0.clearFigure() # In order to have a "live" image we clear all information and plot it again
             featureplotClass0.fig.suptitle("Feature plot for testing data with \n" + str(len(s.listOfFeatures[featureIndexX])) + " samples", fontsize=22, fontweight='normal')
             featureplotClass0.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 0")
@@ -266,11 +266,9 @@ def main():
             featureplotClass0.updateFigure()
             featureplotClass0.saveFigure("TestingData")
 
-
-
         # Now with the featureplot of class0, we need to draw the featureplot where the class0 is going to get classified.
         # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.
-        featureplotClass0Classified = PlotFigures(4, "Feature plot for classified test data", "test")
+        featureplotClass0Classified = PlotFigures(4, "Feature plot for classified test data", "test", saveImagePath)
         featureplotClass0Classified.clearFigure()
         # x = 0.4
         # y = 0.2
@@ -281,9 +279,40 @@ def main():
         # plt.show(block=False)   # It is very big with 300 dpi
         # plt.draw()
 
+        # Is th training data ok?
+        # Well the training data have some false positives, but the SVM is not overfitting
+        print "Now we are at the end of the program..."
+        # cv2.imshow("The class 1 data", s1.imgDraw)
+        # cv2.imshow("The class 2 data", s2.imgDraw)
+        # cv2.imshow("The class 3 data", s3.imgDraw)
+
+        # However the testingdata (which is right now also a still image)
+        # might needs to be look at.
+
+        # cv2.imshow("Testing data input", i.testingData)
+        # cv2.imshow("Preprocessing stuff1", p.imgSeedAndSprout)
+        # cv2.imshow("Preprocessing stuff2", p.imgSeedandSproutRepaired)
+        # cv2.imshow("Segmentation stuff1", s.imgContours)
+        # cv2.imshow("Segmentation stuff2", s.imgDraw)
+
+        # Save the images
+        # cv2.imwrite(saveImagePath + "imgDrawClass1.png", s1.imgDraw)
+        # cv2.imwrite(saveImagePath + "imgDrawClass2.png", s2.imgDraw)
+        # cv2.imwrite(saveImagePath + "imgDrawClass3.png", s3.imgDraw)
+        #
+        # cv2.imwrite(saveImagePath + "imgSeedAndSproutClass0.png", p.imgSeedAndSprout)
+        # cv2.imwrite(saveImagePath + "imgSeedandSproutRepairedClass0.png", p.imgSeedandSproutRepaired)
+        # cv2.imwrite(saveImagePath + "imgContoursClass0.png", s.imgContours)
+        # cv2.imwrite(saveImagePath + "imgDrawClass0.png", s.imgDraw)
+
+        # cv2.imshow("The imgSeedandSproutRepaired  image", p.imgSeedandSproutRepaired)
+        # cv2.imshow("The imgSeedAndSprout  image", p.imgSeedAndSprout)
+        # cv2.imshow("The segmentation image", s.imgDraw)
+
         # imgPause = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/3Classes/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
         # cv2.imshow("Pause program", imgPause)
         # cv2.waitKey(0)
+        # return 0
 
         featureClass1ListX, \
         featureClass1ListY, \
@@ -295,31 +324,12 @@ def main():
         featureClass3ListY, \
         centerClass3List = c.getClassifiedLists3classes(s.listOfFeatures[featureIndexX], s.listOfFeatures[featureIndexY], s.listOfFeatures[0], imgInput)
 
-        # print "The output of the c.getClassfideLists3classes is:"
-        #
-        # print "featureClass1ListX is:", featureClass1ListX
-        # print "featureClass1ListY is:", featureClass1ListY
-        # print "centerClass1List is:", centerClass1List
-        #
-        # print "featureClass2ListX is:", featureClass2ListX
-        # print "featureClass2ListY is:", featureClass2ListY
-        # print "centerClass2List is:", centerClass2List
-        #
-        # print "featureClass3ListX is:", featureClass3ListX
-        # print "featureClass3ListY is:", featureClass3ListY
-        # print "centerClass3List is:", centerClass3List
-
         # # Here we plot the data that has been classified with 3 classes
-        # featureplotClass0Classified.fig.suptitle(
-        #     "Feature plot for classified test data. \n "
-        #     + "Total " + str(len(s.contoursFrontGroundFiltered)) +
-        #     " samples", fontsize=22, fontweight='normal')
-
         featureplotClass0Classified = PlotFigures(4, "Feature plot for testing data class 1,2,3 \n",
                           "with respectively number of samples: " +
                           str(len(featureClass1ListX)) + "," +
                           str(len(featureClass2ListX)) + "," +
-                          str(len(featureClass3ListX)))
+                          str(len(featureClass3ListX)), saveImagePath)
         # featureplotClass0Classified.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 999")
         featureplotClass0Classified.plotData(featureClass1ListX, featureClass1ListY, "bs", "class 1")
         featureplotClass0Classified.plotData(featureClass2ListX, featureClass2ListY, "rs", "class 2")
@@ -333,6 +343,9 @@ def main():
         featureplotClass0Classified.updateFigure()
         featureplotClass0Classified.saveFigure("FeaturePlotForClassifiedTestData")
 
+        # Show the segmentation part
+        cv2.imshow("Segmentation of testing data", s.imgDraw)
+
         # Show the final result...
         cv2.imshow("Show the classified result", c.imgClassified)
         cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
@@ -342,7 +355,6 @@ def main():
         # cv2.waitKey(0)
         # print "Ending program here -DEBUG"
         # return 0
-
         # With the list of COM for good and bad seeds, the last component is used
         # Remember that the output now is in cm. Change the z value to 0.30 to get the x,y, in meters,
         # which is needed for the UR-robot.

@@ -304,7 +304,7 @@ def main():
     compactness2 = Extract(featureTraining2, 1)
 
     #Draw the featuers from the training data set
-    plt.figure("Feature space for training")
+    plt.figure("Feature space for training", dpi=300)
     plt.title("Feature space for training")
     plt.plot(area1,compactness1, 'ro', label = "circles")
     # plt.plot(np.mean(area1), np.mean(compactness1), 'rs', markersize=20)
@@ -317,7 +317,7 @@ def main():
     #plt.xlim(0,1)
     plt.ylim(0.5,1)
     plt.show(block = False)
-    plt.savefig('Feature space for training.jpg')
+    plt.savefig('Feature space for training.png')
 
     #Add the training data together
     print featureTraining1
