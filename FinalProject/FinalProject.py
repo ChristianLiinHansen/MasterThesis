@@ -26,7 +26,7 @@ def main():
     # Input: Plug and play webcamera
     # Output: RGB image, training data and testing data
     i = Input(0)
-    showAndSaveImagesFlag = False  # However the classified featureplot and final classification is still showed...
+    showAndSaveImagesFlag = True  # However the classified featureplot and final classification is still showed...
     normalization = True # Showing normalization data
     saveImagePath = "/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/"
 

@@ -51,6 +51,8 @@ fig = plt.figure(facecolor="white")
 ax = fig.add_subplot(111)
 counts, bins, patches = ax.hist(d1b, bins=10, facecolor='blue', label='Contours', edgecolor='gray')
 
+print "So the legnth of d1b is", len(d1b)
+
 # http://stackoverflow.com/questions/6352740/matplotlib-label-each-bin
 # Set the ticks to be at the edges of the bins.
 ax.set_xticks(bins)

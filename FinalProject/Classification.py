@@ -103,7 +103,8 @@ class Classification(object):
         # Visuzalize with 3 classes
         if vizualizeTraining:
             if normalization:
-                svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C), saveImagePath)
+                # svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C), saveImagePath)
+                svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "", saveImagePath)
                 svmPlot.plotContourf(self.xx, self.yy, self.Z)
                 # Plot also the training points
                 svmPlot.plotData(self.NormalizeData(listOfFeaturesClass1[featureIndexX]), self.NormalizeData(listOfFeaturesClass1[featureIndexY]), "bs", "class 1")
@@ -257,6 +258,7 @@ class Classification(object):
 
         print "Initializing the SVM..."
         gamma = 0.8
+        degree = 2
 
         if normalization:
             kernel = 'rbf'
@@ -264,13 +266,14 @@ class Classification(object):
             xx, yy = np.meshgrid(np.arange(0, 1, h), np.arange(0, 1, h))
         else:
             # Intial gamma was 0.7
-            kernel = 'linear'
+            kernel = 'rbf'
             svc = svm.SVC(kernel=kernel, gamma=gamma, C=C).fit(X, y)
             x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
             y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
             xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1))
 
         # kernel = 'linear'
+        # kernel = 'rbf'
         # kernel = 'poly'
         # svc = svm.SVC(kernel=kernel, degree=2, C=C).fit(X, y)
         # svc = svm.LinearSVC(C=C).fit(X, y)

@@ -173,8 +173,8 @@ class ProcessImage(object):
 
             #Print out the areas.
             # print listOfAreas
-            f = open('workfileClass' + str(classStamp) + '.txt', 'w')
-            f.write(str(listOfAreas))
+            # f = open('workfileClass' + str(classStamp) + '.txt', 'w')
+            # f.write(str(listOfAreas))
 
             self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgHSV) # Let the background be black,seeds be gray and sprouts be white
             self.showImg("Showing the imgSeedAndSprout after morph", self.imgSeedAndSprout, 1)
@@ -199,7 +199,7 @@ class ProcessImage(object):
                 self.drawCentroid(self.imgDrawings, self.features[1], circleSize, (0, 255, 255))
 
                 # Write the hue_mean, hue_std number of sprout pixels, and the length, and width of the boundingBox around the each sprout
-                self.getTextForContours(self.imgDrawings, self.features[0])
+                # self.getTextForContours(self.imgDrawings, self.features[0])
 
             else:
                 self.features = None
@@ -409,7 +409,7 @@ class ProcessImage(object):
 
     def drawSproutBoundingBox(self, p1, p2, p3, p4):
         # Draw the oriente bouningbox
-        lineWidth = 3
+        lineWidth = 1
 
         if self.classStamp is 1:
             boundingBoxColor = (0, 0, 255)
@@ -425,13 +425,14 @@ class ProcessImage(object):
             cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
             cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
         else:
+            pass # Dont want to have the green bounding box at the moement....
             # In case this looks ugly... I agree. But I was too lazy to make a function that draws those lines
             # I just wanted to be able to outcomment drawing the boundingbox for any of the classes.
-            boundingBoxColor = (0, 255, 0)
-            cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
-            cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
-            cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
-            cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
+            # boundingBoxColor = (0, 255, 0)
+            # cv2.line(self.imgDrawings, p1, p2, boundingBoxColor, lineWidth)
+            # cv2.line(self.imgDrawings, p2, p3, boundingBoxColor, lineWidth)
+            # cv2.line(self.imgDrawings, p3, p4, boundingBoxColor, lineWidth)
+            # cv2.line(self.imgDrawings, p4, p1, boundingBoxColor, lineWidth)
 
     def getLengthAndWidthFromSprout(self, obb):
         # Get the length, width and angle
@@ -859,7 +860,7 @@ class PlotFigures():
         plt.plot(np.mean(x), np.mean(y), string_icon, markersize=20)
 
     def updateFigure(self):
-        # plt.show(block=False)   # It is very big with 300 dpi
+        plt.show(block=False)   # It is very big with 300 dpi
         self.saveFigure()
 
     def saveFigure(self):
@@ -1056,6 +1057,10 @@ def main():
     ###################################################
     # Image which was taken the 4/3-2015 at ImproSeed #
     ###################################################
+    # imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section5/InputClass1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section5/InputClassNeg1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTestingData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section5/InputClass0.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+
     imgTrainingClass1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_optimale.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_lang_og_krum.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     imgTestingData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/NGR_Mix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
@@ -1064,9 +1069,8 @@ def main():
     # imgTrainingClassNeg1 = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/tdNeg1.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTestingData = cv2.imread("/home/christian/Dropbox/E14/Master-thesis-doc/images/Improoseed_4_3_2015/images_with_15_cm_from_belt/trainingdata_with_par4/NGR/td0.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
-
     # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/tooLong.jpg", cv2.CV_LOAD_IMAGE_COLOR)
-    # rimgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLangManipulated.jpg", cv2.CV_LOAD_IMAGE_COLOR)
+    # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLangManipulated.jpg", cv2.CV_LOAD_IMAGE_COLOR)
 
     # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seed32ForLang.jpg", cv2.CV_LOAD_IMAGE_COLOR)
     # imgTrainingClass1 = cv2.imread("/home/christian/workspace_python/MasterThesis/SeedDetection/readfiles/seedMix.jpg", cv2.CV_LOAD_IMAGE_COLOR)
@@ -1123,6 +1127,7 @@ def main():
         drawData1.setXlabel(featureLabelX)
         drawData1.setYlabel(featureLabelY)
         drawData1.updateFigure()
+
 
         # Initialize the Perceptron, in order to get acces to the normalizeData function
         p = Perceptron()
@@ -1238,7 +1243,7 @@ def main():
         # testData.showImg("Grayscale image class 0 and fitted to display on  screen", testData.imgGray, image_show_ratio)
 
         # Show the thresholded image. This contains the seeds and the sprouts with a gray level. Background is black
-        td1.showImg("ThresholdedClass1", td1.imgThreshold, image_show_ratio)
+        # td1.showImg("ThresholdedClass1", td1.imgThreshold, image_show_ratio)
         # tdNeg1.showImg("ThresholdedClassNeg1", tdNeg1.imgThreshold, image_show_ratio)
         # testData.showImg("ThresholdedClass0", testData.imgThreshold, image_show_ratio)
 
@@ -1248,7 +1253,7 @@ def main():
         # testData.showImg("ContoursTestData", testData.imgContourDrawing, image_show_ratio)
 
         # Show the segmentated sprouts by using HSV
-        td1.showImg("HSVclass1", td1.imgHSV, image_show_ratio)
+        # td1.showImg("HSVclass1", td1.imgHSV, image_show_ratio)
         # tdNeg1.showImg("HSVclassNeg1", tdNeg1.imgHSV, image_show_ratio)
         # testData.showImg("HSVclass0", testData.imgHSV, image_show_ratio)
 
@@ -1258,7 +1263,7 @@ def main():
         # testData.showImg("HSVclass0Morph", testData.imgMorph, image_show_ratio)
 
         # Show the addition of the two images, thresholde and HSV
-        td1.showImg("AddedClass1", td1.imgSeedAndSprout, image_show_ratio)
+        # td1.showImg("AddedClass1", td1.imgSeedAndSprout, image_show_ratio)
         # tdNeg1.showImg("AddedClassNeg1", tdNeg1.imgSeedAndSprout, image_show_ratio)
         # testData.showImg("AddedClass0", testData.imgSeedAndSprout, image_show_ratio)
 
