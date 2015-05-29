@@ -80,7 +80,7 @@ plt.grid()
 ax.set_axisbelow(True)
 plt.xlabel("Contour area")
 plt.ylabel("Frequency")
-ax.set_title('Histogram for each class', fontsize = 20)
+ax.set_title('Histogram for testing data', fontsize = 20)
 plt.legend()
 plt.show(fig.savefig("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/HistogramClass0.png" ,dpi=300))
 

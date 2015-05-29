@@ -95,8 +95,8 @@ class ProcessImage(object):
         # self.addTrackbar("Max G", "The RGB segmentation with trackbar", self.maxG, 255)
         # self.addTrackbar("Min B", "The RGB segmentation with trackbar", self.minB, 255)
         # self.addTrackbar("Max B", "The RGB segmentation with trackbar", self.maxB, 255)
-        self.addTrackbar("Min contour area", nameOfContourWindow, self.minContourArea, 10000)
-        self.addTrackbar("Max contour area", nameOfContourWindow, self.maxContourArea, 100000)
+        self.addTrackbar("Min contour area", nameOfContourWindow, self.minContourArea, 2000)
+        self.addTrackbar("Max contour area", nameOfContourWindow, self.maxContourArea, 3000)
 
         while True:
             k = cv2.waitKey(30) & 0xff
@@ -156,7 +156,12 @@ class ProcessImage(object):
             self.contoursFromThresholdImg = self.getContours(self.imgThreshold)  # Find the contours of the whole objects, to later do some matching...
 
             # Filter out the number of contours, like small noise-blobs, etc.
-            self.contoursFromThresholdImgFiltered, listOfAreas = self.getContoursFilter(self.contoursFromThresholdImg, self.minContourArea, self.maxContourArea)
+            self.contoursFromThresholdImgFiltered, \
+            listOfAreas, \
+            contourSkipped, \
+            contourAreasSkipped, \
+            minContour, \
+            maxContour = self.getContoursFilter(self.contoursFromThresholdImg, self.minContourArea, self.maxContourArea)
 
             #############################################
             # Try to crop out the first contour
@@ -179,18 +184,56 @@ class ProcessImage(object):
             self.imgSeedAndSprout = self.addImg(self.imgThreshold, self.imgHSV) # Let the background be black,seeds be gray and sprouts be white
             self.showImg("Showing the imgSeedAndSprout after morph", self.imgSeedAndSprout, 1)
 
-            # Draw the
+            # Draw the contours that was in ranage
             self.imgContourDrawing = self.imgThreshold.copy()
             # Set lineWidth to negative, to draw all the pixel within each contour.
             lineWidth = 2
             self.imgContourDrawing = self.drawContour(self.imgContourDrawing, self.contoursFromThresholdImgFiltered, lineWidth)
             self.showImg("Show contours of imgThreshold after morph", self.imgContourDrawing, 1)
 
+            ################################################
+            # Print out the contours which was rejected...
+            ################################################
+            # Draw the contours that was outside the range of the area limits
+            self.imgContourDrawingOutOfRange = self.img.copy()
+
+            # Set lineWidth to negative, to draw all the pixel within each contour.
+            lineWidth = 2
+            cv2.drawContours(self.imgContourDrawingOutOfRange, contourSkipped, -1, (0, 255, 0), 1)
+
+            # Calculate the COM of all the contours that was skipped.
+            centerOfSkippedContours = []
+
+            for contour in contourSkipped:
+                centerOfSkippedContours = self.getCentroidOfSingleContour(contour)
+                cv2.circle(self.imgContourDrawingOutOfRange, (centerOfSkippedContours[1], centerOfSkippedContours[0]), 20, (255, 255, 0), lineWidth)
+
+            print "The areas skipped in this image is:", contourAreasSkipped
+
+            # Get the minimum contour area of the non-skipped contours"
+            print "The minimum founded area, in the defined range is:", np.min(listOfAreas)
+            print "The maximum founded area, in the defined range is:", np.max(listOfAreas)
+            print "The minimumContour length is:", len(minContour)
+            print "The maximumContour length is:", len(maxContour)
+
+            # Get the minimum centroid and maximum centroid, which is within the defined range
+            minCenterWithinRange = self.getCentroidOfSingleContour(minContour)
+            maxCenterWithinRange = self.getCentroidOfSingleContour(maxContour)
+            cv2.circle(self.imgContourDrawingOutOfRange, (minCenterWithinRange[1], minCenterWithinRange[0]), 50, (0, 0, 255), lineWidth)
+            cv2.circle(self.imgContourDrawingOutOfRange, (maxCenterWithinRange[1], maxCenterWithinRange[0]), 50, (255, 0, 0), lineWidth)
+
+            # Get the minimum and maximum contour which was within the defined range
+            cv2.drawContours(self.imgContourDrawingOutOfRange, minContour, -1, (0, 0, 255), lineWidth)
+            cv2.drawContours(self.imgContourDrawingOutOfRange, maxContour, -1, (255, 0, 0), lineWidth)
+
+            self.showImg("Show contours which is out of range in area", self.imgContourDrawingOutOfRange, 1)
+            cv2.imwrite("/home/christian/Dropbox/E14/Master-thesis-doc/images/Section6/InputClass0WithContoursArea.png", self.imgContourDrawingOutOfRange)
+
             # In order to draw on the input image, without messing the original, a copy of the input image is made. This is called imgDrawings
             self.imgDrawings = self.img.copy()
 
             if self.contoursFromThresholdImgFiltered:
-                print "So the contoursFromThresholdImgFiltered looks like this:", self.contoursFromThresholdImgFiltered
+                # print "So the contoursFromThresholdImgFiltered looks like this:", self.contoursFromThresholdImgFiltered
                 self.features = self.getFeaturesFromContours(self.imgSeedAndSprout, self.contoursFromThresholdImgFiltered, self.classStamp) # The 100 is not testet to fit the smallest sprout
 
                 # Draw the center of mass, on the copy of the input image.
@@ -241,6 +284,11 @@ class ProcessImage(object):
         temp_contourArea = []
         contourAreaMax = 0
         contourAreaMin = maxAreaThreshold
+        contourAreasSkipped = []
+        contourSkipped = []
+
+        minContour = []
+        maxContour = []
 
         for contour in contours:
             #Get the area of the given contour, in order to check if that contour is actually something useful, like a seed or sprout.
@@ -248,13 +296,18 @@ class ProcessImage(object):
 
             if contour_area > contourAreaMax:
                 contourAreaMax = contour_area
+                maxContour = contour
 
-            if (contour_area < contourAreaMin):
+
+            if ((contour_area < contourAreaMin) and (contour_area > minAreaThreshold)):
                 contourAreaMin = contour_area
+                minContour = contour
 
             # If the area is below a given threshold, we skip that contour. It simply had to few pixels to represent an object = seed + sprout
             if (contour_area < minAreaThreshold) or (contour_area > maxAreaThreshold):
                 # print "The contour area is", contour_area, "and hence skipped"
+                contourAreasSkipped.append(contour_area)
+                contourSkipped.append(contour)
                 continue
 
             temp_contourArea.append(contour_area)
@@ -263,7 +316,7 @@ class ProcessImage(object):
         # print "Now contours looks like this:", temp_contour
         # print "The contourAreaMax was:", contourAreaMax
         # print "The contourAreaMin was:", contourAreaMin
-        return temp_contour, temp_contourArea
+        return temp_contour, temp_contourArea, contourSkipped, contourAreasSkipped, minContour, maxContour
 
     def getTextForContours(self, img, resultList):
         # print "We are inside the getTextForContours"
@@ -668,7 +721,7 @@ class ProcessImage(object):
         #If somehow one of the moments is zero, then we brake and reenter the loop (continue)
         #to avoid dividing with zero
         if (int(m['m01']) == 0 or int(m['m00'] == 0)):
-            print "ops, devided by zero"
+            # print "ops, devided by zero"
             # If we return None, then the program crash. So if there is an invalid division, then the COM is just 0.0
             return 0, 0
 
@@ -795,7 +848,6 @@ class ProcessImage(object):
 
         # Convert it to numpy
         list_np = np.array(list, dtype=np.int32)
-        print "Now the list_np looks like this", list_np
         return list_np
 
     def getFeatureLabel(self, featureIndex):
@@ -1019,6 +1071,7 @@ class ProcessVideo(ProcessImage):
 
 def main():
 
+    ShowFigures = False
     ###############################################################################################
     # Generel note:
     #
@@ -1120,13 +1173,14 @@ def main():
         featureLabelY = td1.getFeatureLabel(featureIndexY)
 
         # Draw featurespace - not normalized
-        drawData1 = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
-        drawData1.plotData(td1.features[featureIndexX], td1.features[featureIndexY], "rs", "Class 1")
-        drawData1.plotData(tdNeg1.features[featureIndexX], tdNeg1.features[featureIndexY], "bs", "Class -1")
-        # drawData1.plotData(testData.features[featureIndexX], testData.features[featureIndexY], "gs", "Class 0") # Uncomment this just to see the mix data in the feature space
-        drawData1.setXlabel(featureLabelX)
-        drawData1.setYlabel(featureLabelY)
-        drawData1.updateFigure()
+        if ShowFigures:
+            drawData1 = PlotFigures("Feature space for training data class 1 and class -1", "FeatureSpaceClass1andClassNeg1")
+            drawData1.plotData(td1.features[featureIndexX], td1.features[featureIndexY], "rs", "Class 1")
+            drawData1.plotData(tdNeg1.features[featureIndexX], tdNeg1.features[featureIndexY], "bs", "Class -1")
+            # drawData1.plotData(testData.features[featureIndexX], testData.features[featureIndexY], "gs", "Class 0") # Uncomment this just to see the mix data in the feature space
+            drawData1.setXlabel(featureLabelX)
+            drawData1.setYlabel(featureLabelY)
+            drawData1.updateFigure()
 
 
         # Initialize the Perceptron, in order to get acces to the normalizeData function
@@ -1166,34 +1220,36 @@ def main():
         p.getClassifier(0, 1, 0.01)
 
         # Draw the data with the classifier line and with normalized data
-        drawData2 = PlotFigures("Normalized feature space for class 1 and class -1 data \n with Perceptron classifier ", "NormFeatureSpaceClass1andClassNeg1WithPerceptron")
-        drawData2.plotData(p.wx, p.wy, "b-", "The perceptron")
-        drawData2.plotData(class1ListX, class1ListY, "rs", "Class 1")
-        drawData2.plotData(classNeg1ListX, classNeg1ListY, "bs", "Class -1")
-        drawData2.limit_y(0,1)
-        drawData2.limit_x(0,1)
-        # drawData2.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
-        drawData2.setXlabel(featureLabelX)
-        drawData2.setYlabel(featureLabelY)
-        drawData2.updateFigure()
+        if ShowFigures:
+            drawData2 = PlotFigures("Normalized feature space for class 1 and class -1 data \n with Perceptron classifier ", "NormFeatureSpaceClass1andClassNeg1WithPerceptron")
+            drawData2.plotData(p.wx, p.wy, "b-", "The perceptron")
+            drawData2.plotData(class1ListX, class1ListY, "rs", "Class 1")
+            drawData2.plotData(classNeg1ListX, classNeg1ListY, "bs", "Class -1")
+            drawData2.limit_y(0,1)
+            drawData2.limit_x(0,1)
+            # drawData2.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+            drawData2.setXlabel(featureLabelX)
+            drawData2.setYlabel(featureLabelY)
+            drawData2.updateFigure()
 
 
         # Draw the data with the classifier line and the normalized testing data
-        drawData3 = PlotFigures("Normalized feature space for testing data \n with Perceptron classifier ", "NormFeatureSpaceClass0WithPerceptron")
-        drawData3.plotData(p.wx, p.wy, "b-", "The perceptron")
-        drawData3.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
+        if ShowFigures:
+            drawData3 = PlotFigures("Normalized feature space for testing data \n with Perceptron classifier ", "NormFeatureSpaceClass0WithPerceptron")
+            drawData3.plotData(p.wx, p.wy, "b-", "The perceptron")
+            drawData3.plotData(classZeroListX, classZeroListY, "gs", "Class 0")
 
-        # print "The classZeroListX is:", classZeroListX
-        # print "The classZeroListY is:", classZeroListY
+            # print "The classZeroListX is:", classZeroListX
+            # print "The classZeroListY is:", classZeroListY
 
-        # Note: The legend is a little fucked... If there is only two elements, the Perceptron line and the testin data
-        # that has not been classified, then the text of Perceptron goes out into the right margin of the image.
-        # IF we add anohter data set, then the text aligns... HMm.
-        drawData3.limit_y(0,1)
-        drawData3.limit_x(0,1)
-        drawData3.setXlabel(featureLabelX)
-        drawData3.setYlabel(featureLabelY)
-        drawData3.updateFigure()
+            # Note: The legend is a little fucked... If there is only two elements, the Perceptron line and the testin data
+            # that has not been classified, then the text of Perceptron goes out into the right margin of the image.
+            # IF we add anohter data set, then the text aligns... HMm.
+            drawData3.limit_y(0,1)
+            drawData3.limit_x(0,1)
+            drawData3.setXlabel(featureLabelX)
+            drawData3.setYlabel(featureLabelY)
+            drawData3.updateFigure()
 
         # print "The classZeroListX is:", classZeroListX
         # print "The classZeroListY is:", classZeroListY
@@ -1212,21 +1268,20 @@ def main():
         Finalclass1ListX, Finalclass1ListY, FinalclassNeg1ListX, FinalclassNeg1ListY = p.getIndividualList(classifiedTestingData)
 
         # Draw the data with the classifier line and where the testing data has been classified.
-        drawData4 = PlotFigures("Normalized classified testing data", "NormClassifiedData")
-        drawData4.plotData(p.wx, p.wy, "b-", "The perceptron")
-        drawData4.plotData(Finalclass1ListX, Finalclass1ListY, "rs", "Class 1")
-        drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class -1")
-        drawData4.limit_y(0,1)
-        drawData4.limit_x(0,1)
-        drawData4.setXlabel(featureLabelX)
-        drawData4.setYlabel(featureLabelY)
-        drawData4.updateFigure()
+        if ShowFigures:
+            drawData4 = PlotFigures("Normalized classified testing data", "NormClassifiedData")
+            drawData4.plotData(p.wx, p.wy, "b-", "The perceptron")
+            drawData4.plotData(Finalclass1ListX, Finalclass1ListY, "rs", "Class 1")
+            drawData4.plotData(FinalclassNeg1ListX, FinalclassNeg1ListY, "bs", "Class -1")
+            drawData4.limit_y(0,1)
+            drawData4.limit_x(0,1)
+            drawData4.setXlabel(featureLabelX)
+            drawData4.setYlabel(featureLabelY)
+            drawData4.updateFigure()
 
         ###############################################################################
         # Show some results
         ###############################################################################
-
-
 
         # Training data class 1
         td1.showImg("InputClass1", td1.img, image_show_ratio)
