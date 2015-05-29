@@ -164,15 +164,9 @@ class Classification(object):
         # print "The length of Z is:", len(self.Z), "and the shape is:", self.Z.shape
         # print "The Z contains this flipped:", np.flipud(self.Z)
 
-        print "The input testDataX to the doClassification is:", testDataX, "\n"
-        print "The input testDataY to the doClassification is:", testDataY, "\n"
-
         # Then we normalize the data
         normTestDataX = self.NormalizeData(testDataX)
         normTestDataY = self.NormalizeData(testDataY)
-
-        print "The input testDataX is normalized to this:", normTestDataX, "\n"
-        print "The input testDataY is normalized to this:", normTestDataY, "\n"
 
         # Now we have a normalize dataX and dataY. This coordinate is used as
         # a lookup in the Z-matrix. With h=0.001, we have a Z-matrix shape of (1000, 1000)

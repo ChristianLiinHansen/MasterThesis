@@ -250,12 +250,6 @@ class Segmentation(object):
 
     def getFeaturesFromEachROI(self, contours, imgFrontGround, imgSeedAndSprout, imgSprout, imgRGB, classStamp):
         # Define the list of values for all the contours for each element.
-
-        print "Now we are inside getFeatureFromEachROI"
-        cv2.imshow("The imgSeedAndSprout image", imgSeedAndSprout)
-        cv2.imshow("The imgSprout image", imgSprout)
-        cv2.imshow("The imgRGB image", imgRGB)
-
         centerOfMassList = []
         hueMeanList = []
         hueStdList = []

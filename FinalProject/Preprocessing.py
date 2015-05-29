@@ -107,29 +107,29 @@ class Preprocessing(object):
         # So take the sprout image and dilate in order to connect the broken sprout together, but
         # in order to not just flood out in the dark area, a AND operation can be performed between the result and the front ground image
 
-        if not classStamp == 1:
-            kernel = np.ones((3, 3), np.uint8)
-            kernel = np.matrix(([[0, 1, 0], [1, 1, 1], [0, 1, 0]]), np.uint8)
+        # if not classStamp == 1:
+        kernel = np.ones((3, 3), np.uint8)
+        kernel = np.matrix(([[0, 1, 0], [1, 1, 1], [0, 1, 0]]), np.uint8)
 
-            cv2.imwrite(saveImagePath + "imgSprout.png", self.imgSprout)
+        cv2.imwrite(saveImagePath + "imgSprout.png", self.imgSprout)
 
-            # First dilate to build the bridge
-            imgSproutMorph = cv2.dilate(self.imgSprout, kernel, iterations=4)
-            # Then erode after
-            # imgSproutMorph = cv2.erode(imgSproutMorph, kernel, iterations=2)
-            cv2.imwrite(saveImagePath + "imgSproutMorph.png", imgSproutMorph)
+        # First dilate to build the bridge
+        imgSproutMorph = cv2.dilate(self.imgSprout, kernel, iterations=1)
+        # Then erode after
+        # imgSproutMorph = cv2.erode(imgSproutMorph, kernel, iterations=2)
+        cv2.imwrite(saveImagePath + "imgSproutMorph.png", imgSproutMorph)
 
-            # Get a white front ground image, just by add two front ground image together. 128 + 128 = 255
-            imgFrontGroundWhite = cv2.add(self.imgFrontGround, self.imgFrontGround)
-            cv2.imwrite(saveImagePath + "imgFrontGroundWhite.png", imgFrontGroundWhite)
+        # Get a white front ground image, just by add two front ground image together. 128 + 128 = 255
+        imgFrontGroundWhite = cv2.add(self.imgFrontGround, self.imgFrontGround)
+        cv2.imwrite(saveImagePath + "imgFrontGroundWhite.png", imgFrontGroundWhite)
 
-            # Do a AND operation between the white front ground and the morphed
-            self.imgSproutRepaired = cv2.bitwise_and(imgSproutMorph, imgFrontGroundWhite)
-            cv2.imwrite(saveImagePath + "imgSproutRepaired.png", self.imgSproutRepaired)
+        # Do a AND operation between the white front ground and the morphed
+        self.imgSproutRepaired = cv2.bitwise_and(imgSproutMorph, imgFrontGroundWhite)
+        cv2.imwrite(saveImagePath + "imgSproutRepaired.png", self.imgSproutRepaired)
 
-            # After this we add the new mask to a normal front ground image
-            self.imgSeedandSproutRepaired = cv2.add(self.imgSproutRepaired, self.imgFrontGround)
-            cv2.imwrite(saveImagePath + "imgSeedandSproutRepaired.png", self.imgSeedandSproutRepaired)
+        # After this we add the new mask to a normal front ground image
+        self.imgSeedandSproutRepaired = cv2.add(self.imgSproutRepaired, self.imgFrontGround)
+        cv2.imwrite(saveImagePath + "imgSeedandSproutRepaired.png", self.imgSeedandSproutRepaired)
 
             # And show the result
             # cv2.imshow("imgSeedandSproutRepairedClass"+str(classStamp), self.imgSeedandSproutRepaired)
@@ -180,7 +180,7 @@ class Preprocessing(object):
         thresholdLevel = 128 # This manual threshold is ignore, when the THRESH_OTSU is used. The "
         maxValue = 128
         OtsuOptimalThreshold, img_binary = cv2.threshold(img_gray, thresholdLevel, maxValue, cv2.THRESH_OTSU)
-        print "So Otso says the optimal threshold is:", OtsuOptimalThreshold
+        # print "So Otso says the optimal threshold is:", OtsuOptimalThreshold
 
         # # Plot the histogram of the grayscale image in order to argue for choosen the threshold value
         # self.size = 18
