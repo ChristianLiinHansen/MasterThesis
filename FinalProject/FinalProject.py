@@ -130,16 +130,23 @@ def DestroyWindows():
     cv2.destroyWindow(nameOfTrackBarWindowRGB)
     cv2.destroyWindow(nameOfVideoStreamWindowHSVclass1)
 
-def ShowFeaturePlotClass0(featureIndexX, featureIndexY, s, c, saveImagePath):
+def ShowFeaturePlotClass0(featureIndexX, featureIndexY, s, c, saveImagePath, normalization):
         # Plot the featureplot for the testing data, e.i class 0
         featureplotClass0 = PlotFigures(3, "Feature plot for testing data class 0 with" + str(len(s.listOfFeatures[featureIndexX])) + " samples", "", saveImagePath)
         featureplotClass0.clearFigure() # In order to have a "live" image we clear all information and plot it again
         featureplotClass0.fig.suptitle("Feature plot for testing data with \n" + str(len(s.listOfFeatures[featureIndexX])) + " samples", fontsize=22, fontweight='normal')
-        featureplotClass0.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 0")
+
+        if normalization:
+            featureplotClass0.plotData(c.NormalizeData(s.listOfFeatures[featureIndexX]), c.NormalizeData(s.listOfFeatures[featureIndexY]), "gs", "class 0")
+            featureplotClass0.setXlabel(c.Xlabel)
+            featureplotClass0.setYlabel(c.Ylabel)
+            featureplotClass0.limit_x(0, c.maxX)
+            featureplotClass0.limit_y(0, c.maxY)
+        else:
+            featureplotClass0.plotData(s.listOfFeatures[featureIndexX], s.listOfFeatures[featureIndexY], "gs", "class 0")
+
         featureplotClass0.setXlabel(c.Xlabel)
         featureplotClass0.setYlabel(c.Ylabel)
-        featureplotClass0.limit_x(0, c.maxX)
-        featureplotClass0.limit_y(0, c.maxY)
         featureplotClass0.addLegend()
         featureplotClass0.updateFigure()
         featureplotClass0.saveFigure("TestingData")
@@ -149,14 +156,7 @@ def ShowFeaturePlotClass0Classified(featureClass1ListX, featureClass2ListX, feat
             # I.e. we want an plot, where the same testing data is seperated into red or blue area, like the training data.
             featureplotClass0Classified = PlotFigures(4, "Feature plot for classified test data", "test", saveImagePath)
             featureplotClass0Classified.clearFigure()
-            # x = 0.4
-            # y = 0.2
-            # featureplotClass0.plotMean(x, y, "cs")
-            # x = int(x * 1/c.h)
-            # y = int(y * 1/c.h)
-            # print "So at x: (", x, ") and y: (", y, ") the Z-value is:", c.Z[y-1, x-1], "\n"
-            # plt.show(block=False)   # It is very big with 300 dpi
-            # plt.draw()
+
             # # Here we plot the data that has been classified with 3 classes
             featureplotClass0Classified = PlotFigures(4, "Feature plot for testing data class 1,2,3 \n",
                           "with respectively number of samples: " +
@@ -207,6 +207,7 @@ def main():
     # Global control parameters, used for debugging, documentation etc...
     showAndSaveImagesFlag = False  # However the classified featureplot and final classification is still showed...
     normalization = True # Showing normalization data
+    vizualize = True
     saveImagePath = "/home/christian/workspace_python/MasterThesis/FinalProject/writefiles/"
 
     # Initialize the Input component with cameraIndex = 0 (webcamera inbuilt in PC)
@@ -234,11 +235,11 @@ def main():
     # featureHueMeanList,                        # feature 5
     # featureHueStdList,                         # feature 6
     # featureClassStampList                      # feature 7
-    featureIndexX = 1
+    featureIndexX = 3
     featureIndexY = 4
 
     # Initialize the clasification component for the training data
-    c = Classification(s1.listOfFeatures, s2.listOfFeatures, s3.listOfFeatures, featureIndexX, featureIndexY, showAndSaveImagesFlag, saveImagePath, normalization)
+    c = Classification(s1.listOfFeatures, s2.listOfFeatures, s3.listOfFeatures, featureIndexX, featureIndexY, vizualize, saveImagePath, normalization)
 
     # Initialize the Output component
     o = Output()
@@ -251,7 +252,7 @@ def main():
     userCloseDown = False
     TrackBarInit(i)
 
-    if showAndSaveImagesFlag:
+    if False:
         ShowAndSaveTrainingFigures(i, p1, p2, p3, s1, s2, s3, saveImagePath)
 
     # while i.cameraIsOpen: # To avoid beiing depended on the camera or not, we just say the camera is always open.
@@ -284,8 +285,8 @@ def main():
         # s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedAndSprout, p.imgSprout, 0)
         s = Segmentation(imgInput, p.imgFrontGround, p.imgSeedandSproutRepaired, p.imgSproutRepaired, 0, saveImagePath)
 
-        if showAndSaveImagesFlag:
-            ShowFeaturePlotClass0(featureIndexX, featureIndexY, s, c, saveImagePath)
+        if vizualize:
+            ShowFeaturePlotClass0(featureIndexX, featureIndexY, s, c, saveImagePath, normalization)
 
         featureClass1ListX, \
         featureClass1ListY, \
@@ -297,7 +298,7 @@ def main():
         featureClass3ListY, \
         centerClass3List = c.getClassifiedLists3classes(s.listOfFeatures[featureIndexX], s.listOfFeatures[featureIndexY], s.listOfFeatures[0], imgInput)
 
-        if showAndSaveImagesFlag:
+        if vizualize:
             ShowFeaturePlotClass0Classified(featureClass1ListX, featureClass2ListX, featureClass3ListX, featureClass1ListY, featureClass2ListY, featureClass3ListY,c, saveImagePath)
 
         #############################################
@@ -305,7 +306,7 @@ def main():
         ############################################
 
         cv2.imshow("The final classification", c.imgClassified)
-        # cv2.waitKey(0)
+        cv2.imwrite(saveImagePath + "imgClassified.png", c.imgClassified)
 
         # If the user push "ESC" the program close down.
         k = cv2.waitKey(30) & 0xff

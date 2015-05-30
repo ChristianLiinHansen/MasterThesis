@@ -24,17 +24,17 @@ class Preprocessing(object):
         # Front ground image
         #################################################
         # cv2.imshow("The input RGB image class"+str(self.classStamp), imgInput)
-        cv2.imwrite(self.saveImagePath + "imgInputClass"+str(self.classStamp)+".png", imgInput)
+        # cv2.imwrite(self.saveImagePath + "imgInputClass"+str(self.classStamp)+".png", imgInput)
 
         # Convert the input image to binary image and use morphology to repair the binary image.
         # This is the front ground image.
         self.imgFrontGround = self.getFrontGround(imgInput.copy())
         # cv2.imshow("The imgFrontGround image before any morph class"+str(self.classStamp), self.imgFrontGround)
-        cv2.imwrite(self.saveImagePath + "imgFrontGroundBeforeMorphClass"+str(self.classStamp)+".png", self.imgFrontGround)
+        # cv2.imwrite(self.saveImagePath + "imgFrontGroundBeforeMorphClass"+str(self.classStamp)+".png", self.imgFrontGround)
 
         self.imgFrontGround = self.getClosing(self.imgFrontGround, iterations_erode=1, iterations_dilate=1, kernelSize=3, kernelShape=0)
         # cv2.imshow("The imgFrontGround image after 1 x closing class"+str(self.classStamp), self.imgFrontGround)
-        cv2.imwrite(self.saveImagePath + "imgFrontGroundAfter1xClosingClass"+str(self.classStamp)+".png", self.imgFrontGround)
+        # cv2.imwrite(self.saveImagePath + "imgFrontGroundAfter1xClosingClass"+str(self.classStamp)+".png", self.imgFrontGround)
 
         #################################################
         # Sprout image
@@ -99,7 +99,7 @@ class Preprocessing(object):
         # Add the front ground image and the sprout image in order to get the SeedAndSprout image.
         # Show and write the imgSeedAndSprout after morph
         self.imgSeedAndSprout = cv2.add(self.imgFrontGround, self.imgSprout)
-        cv2.imwrite(saveImagePath + "imgSeedAndSproutBeforeAND.png", self.imgSeedAndSprout)
+        # cv2.imwrite(saveImagePath + "imgSeedAndSproutBeforeAND.png", self.imgSeedAndSprout)
         # cv2.imshow("Seed and sprout image after morph class"+str(self.classStamp), self.imgSeedAndSprout)
         # cv2.imwrite(self.saveImagePath + "imgSeedandSproutAfter1xOpeningClass"+str(self.classStamp)+".png", self.imgSeedAndSprout)
 
@@ -111,25 +111,25 @@ class Preprocessing(object):
         kernel = np.ones((3, 3), np.uint8)
         kernel = np.matrix(([[0, 1, 0], [1, 1, 1], [0, 1, 0]]), np.uint8)
 
-        cv2.imwrite(saveImagePath + "imgSprout.png", self.imgSprout)
+        # cv2.imwrite(saveImagePath + "imgSprout.png", self.imgSprout)
 
         # First dilate to build the bridge
         imgSproutMorph = cv2.dilate(self.imgSprout, kernel, iterations=1)
         # Then erode after
         # imgSproutMorph = cv2.erode(imgSproutMorph, kernel, iterations=2)
-        cv2.imwrite(saveImagePath + "imgSproutMorph.png", imgSproutMorph)
+        # cv2.imwrite(saveImagePath + "imgSproutMorph.png", imgSproutMorph)
 
         # Get a white front ground image, just by add two front ground image together. 128 + 128 = 255
         imgFrontGroundWhite = cv2.add(self.imgFrontGround, self.imgFrontGround)
-        cv2.imwrite(saveImagePath + "imgFrontGroundWhite.png", imgFrontGroundWhite)
+        # cv2.imwrite(saveImagePath + "imgFrontGroundWhite.png", imgFrontGroundWhite)
 
         # Do a AND operation between the white front ground and the morphed
         self.imgSproutRepaired = cv2.bitwise_and(imgSproutMorph, imgFrontGroundWhite)
-        cv2.imwrite(saveImagePath + "imgSproutRepaired.png", self.imgSproutRepaired)
+        # cv2.imwrite(saveImagePath + "imgSproutRepaired.png", self.imgSproutRepaired)
 
         # After this we add the new mask to a normal front ground image
         self.imgSeedandSproutRepaired = cv2.add(self.imgSproutRepaired, self.imgFrontGround)
-        cv2.imwrite(saveImagePath + "imgSeedandSproutRepaired.png", self.imgSeedandSproutRepaired)
+        # cv2.imwrite(saveImagePath + "imgSeedandSproutRepaired.png", self.imgSeedandSproutRepaired)
 
             # And show the result
             # cv2.imshow("imgSeedandSproutRepairedClass"+str(classStamp), self.imgSeedandSproutRepaired)

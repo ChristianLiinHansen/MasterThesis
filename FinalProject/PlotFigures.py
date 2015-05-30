@@ -74,7 +74,7 @@ class PlotFigures(object):
         plt.grid(True)
 
     def addLegend(self):
-        plt.legend(loc= "lower right")
+        plt.legend(loc= "upper right")
 
     def setXlabel(self, string_x):
         plt.xlabel(string_x, fontsize=self.size)
