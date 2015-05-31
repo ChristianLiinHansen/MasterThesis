@@ -99,7 +99,7 @@ def main():
     red_proxy = plt.Rectangle((0, 0), 1, 1, fc="r")
     green_proxy = plt.Rectangle((0, 0), 1, 1, fc="g")
     blue_proxy = plt.Rectangle((0, 0), 1, 1, fc="b")
-    ax.legend([red_proxy,green_proxy, blue_proxy],['Seed','Sprouts', 'Background'], loc = 'upper right')
+    ax.legend([red_proxy,green_proxy, blue_proxy],['Sprout', 'Seed', 'Background'], loc = 'upper right')
 
     # Plot the 3D plot for HSV
     fig2 = plt.figure()
@@ -123,7 +123,7 @@ def main():
     red_proxy = plt.Rectangle((0, 0), 1, 1, fc="r")
     green_proxy = plt.Rectangle((0, 0), 1, 1, fc="g")
     blue_proxy = plt.Rectangle((0, 0), 1, 1, fc="b")
-    ax.legend([red_proxy,green_proxy, blue_proxy],['Seed','Sprouts', 'Background'], loc = 'upper right')
+    ax.legend([red_proxy,green_proxy, blue_proxy],['Sprout','Seed', 'Background'], loc = 'upper right')
 
 
     plt.show(block = True)

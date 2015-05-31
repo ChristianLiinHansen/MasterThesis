@@ -21,8 +21,6 @@ def main():
     p3D = Plot3D(saveToImagePath, readFromImagePath)
 
     # print "The size of the trainingdata class 2 is:", i.trainingData2.shape
-    # cv2.imshow("The trainingData2 looks like this", i.trainingData2)
-    # cv2.waitKey(0)
 
     # Now we make a funtion, that runs through the RGB channel together and look for black pixels
     # A black pixels in a RGB image is where the R,B and B is all zero

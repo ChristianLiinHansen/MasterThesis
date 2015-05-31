@@ -152,7 +152,7 @@ class Classification(object):
                 if kernel == "rbf":
                     svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "Gamma = " + str(gamma) + " and C = " +str(C), saveImagePath)
                 else:
-                    svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "", saveImagePath)
+                    svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "C = " +str(C), saveImagePath)
 
                 svmPlot.plotContourf(self.xx, self.yy, self.Z)
 
@@ -170,9 +170,9 @@ class Classification(object):
                 svmPlot.saveFigure("FeaturePlotForTrainingDataWithBounderyNormalized")
 
                 # print "Stop the program now!!!"
-                imgStop = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgDrawTest2.png", cv2.CV_LOAD_IMAGE_COLOR)
-                cv2.imshow("Stop", imgStop)
-                cv2.waitKey(0)
+                # imgStop = cv2.imread("/home/christian/workspace_python/MasterThesis/FinalProject/readfiles/imgDrawTest2.png", cv2.CV_LOAD_IMAGE_COLOR)
+                # cv2.imshow("Stop", imgStop)
+                # cv2.waitKey(0)
 
             else:
                 svmPlot = PlotFigures(2, "SVM classification training using a " + kernel + " kernel", "gamma =" + str(gamma) + " and C =" + str(C), saveImagePath)
@@ -313,6 +313,7 @@ class Classification(object):
         kernel = 'poly'
         kernel = 'linear'
         kernel = 'rbf'
+        kernel = 'linear'
 
         svc = svm.SVC(kernel=kernel, gamma=gamma, degree=degree, C=C).fit(X, y)
         xx, yy = np.meshgrid(np.arange(0, 1, h), np.arange(0, 1, h))
